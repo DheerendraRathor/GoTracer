@@ -40,6 +40,7 @@ func main() {
 			color = models.NewPixelFromVector(
 				models.DivideScalar(color, float64(sample)),
 			)
+			color.Gamma2()
 			image[rows-i-1][j] = color
 		}
 	}
@@ -51,8 +52,16 @@ func Color(r models.Ray, world models.HitableList) models.Pixel {
 
 	willHit, hitRecord := world.Hit(r, 0.0, math.MaxFloat64)
 	if willHit {
-		pixel := models.MultiplyScalar(models.NewPixel(hitRecord.N.X()+1, hitRecord.N.Y()+1, hitRecord.N.Z()+1), 0.5)
-		return models.NewPixelFromVector(pixel)
+		pN := models.AddVectors(hitRecord.P, hitRecord.N)
+		targetPoint := models.AddVectors(pN, utils.RandomPointInUnitSphere())
+		rayToTargetPoint := models.Ray{
+			Origin:    hitRecord.P,
+			Direction: models.SubtractVectors(targetPoint, hitRecord.P),
+		}
+		outputPixelVector := models.MultiplyScalar(Color(rayToTargetPoint, world), 0.5)
+		return models.NewPixelFromVector(outputPixelVector)
+		//pixel := models.MultiplyScalar(models.NewPixel(hitRecord.N.X()+1, hitRecord.N.Y()+1, hitRecord.N.Z()+1), 0.5)
+		//return models.NewPixelFromVector(pixel)
 	}
 
 	var unitDir models.Vector3D = models.UnitVector(r.Direction)

@@ -1,5 +1,7 @@
 package models
 
+import "math"
+
 type Pixel struct {
 	Vector3D
 }
@@ -14,6 +16,12 @@ func (p *Pixel) G() float64 {
 
 func (p *Pixel) B() float64 {
 	return p.z
+}
+
+func (p *Pixel) Gamma2() {
+	p.x = math.Sqrt(p.x)
+	p.y = math.Sqrt(p.y)
+	p.z = math.Sqrt(p.z)
 }
 
 func (p *Pixel) UInt8Pixel() Uint8Pixel {
