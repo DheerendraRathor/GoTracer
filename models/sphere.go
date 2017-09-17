@@ -7,6 +7,13 @@ type Sphere struct {
 	Radius float64
 }
 
+func NewSphere(x, y, z, r float64) Sphere {
+	return Sphere{
+		NewPoint(x, y, z),
+		r,
+	}
+}
+
 func (s Sphere) Hit(r Ray, tmin, tmax float64) (bool, HitRecord) {
 	oc := SubtractVectors(r.Origin, s.Center)
 	var a, b, c, d float64
