@@ -1,16 +1,21 @@
 package models
 
-import "math"
+import (
+	"math"
+	"math/rand"
+)
 
 type Sphere struct {
-	Center Point
-	Radius float64
+	Center   Point
+	Radius   float64
+	Material Material
 }
 
-func NewSphere(x, y, z, r float64) Sphere {
+func NewSphere(x, y, z, r float64, albedo Material) Sphere {
 	return Sphere{
 		NewPoint(x, y, z),
 		r,
+		albedo,
 	}
 }
 
@@ -31,6 +36,7 @@ func (s Sphere) Hit(r Ray, tmin, tmax float64) (bool, HitRecord) {
 			record.T = temp
 			record.P = r.PointAtParameter(temp)
 			record.N = UnitVector(SubtractVectors(record.P, s.Center))
+			record.Material = s.Material
 			return true, record
 		}
 		temp = (-b + sqrtD) / a2
@@ -38,6 +44,7 @@ func (s Sphere) Hit(r Ray, tmin, tmax float64) (bool, HitRecord) {
 			record.T = temp
 			record.P = r.PointAtParameter(temp)
 			record.N = UnitVector(SubtractVectors(record.P, s.Center))
+			record.Material = s.Material
 			return true, record
 		}
 	}
@@ -56,4 +63,17 @@ func (s Sphere) IsHitByRay(r Ray) float64 {
 	} else {
 		return (-b - math.Sqrt(d)) / (2 * a)
 	}
+}
+
+func RandomPointInUnitSphere() Point {
+	var p Point
+	for {
+		x, y, z := 2*rand.Float64()-1, 2*rand.Float64()-1, 2*rand.Float64()-1
+		p = NewPoint(x, y, z)
+		if VectorDotProduct(p, p) < 1.0 {
+			break
+		}
+	}
+
+	return p
 }

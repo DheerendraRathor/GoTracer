@@ -7,14 +7,19 @@ import (
 	"math/rand"
 )
 
-var sphere1 models.Sphere = models.NewSphere(0, 0, -1, 0.5)
-
-var sphere2 models.Sphere = models.NewSphere(0, -100.5, -1, 100)
+const (
+	MaxDepth = 10
+)
 
 func main() {
 	camera := models.NewCamera()
-	rows, columns := 100, 200
-	sample := 10
+	camera.LowerLeftCorner = models.NewPoint(-4.0, -2.0, -2.0)
+	camera.Horizontal = models.NewVector3D(8, 0, 0)
+	camera.Vertical = models.NewVector3D(0, 4, 0)
+	camera.Origin = models.NewPoint(0, 0.5, 2)
+
+	rows, columns := 400, 800
+	sample := 100
 
 	image := make([][]models.Pixel, rows)
 	for i := 0; i < rows; i++ {
@@ -23,8 +28,10 @@ func main() {
 
 	world := models.HitableList{}
 
-	world.List = append(world.List, sphere1)
-	world.List = append(world.List, sphere2)
+	world.AddHitable(models.NewSphere(0, 0, -1, 0.5, models.NewLambertian(0.8, 0.3, 0.3)))
+	world.AddHitable(models.NewSphere(0, -100.5, -1, 100, models.NewLambertian(0.8, 0.8, 0)))
+	world.AddHitable(models.NewSphere(1, 0, -1, 0.5, models.NewMetal(0.8, 0.6, 0.2, 0.6)))
+	world.AddHitable(models.NewSphere(-1, 0, -1, 0.5, models.NewMetal(0.8, 0.8, 0.8, 0.1)))
 
 	for i := rows - 1; i >= 0; i-- {
 		for j := 0; j < columns; j++ {
@@ -34,7 +41,7 @@ func main() {
 				u, v := (float64(j)+randFloatu)/float64(columns), (float64(i)+randFloatv)/float64(rows)
 				ray := camera.RayAt(u, v)
 				color = models.NewPixelFromVector(
-					models.AddVectors(color, Color(ray, world)),
+					models.AddVectors(color, Color(ray, world, 0)),
 				)
 			}
 			color = models.NewPixelFromVector(
@@ -45,23 +52,18 @@ func main() {
 		}
 	}
 
-	utils.RenderPPM(image, "myTestImage.ppm")
+	utils.RenderPPM(image, "myTestImage2.ppm")
 }
 
-func Color(r models.Ray, world models.HitableList) models.Pixel {
+func Color(r models.Ray, world models.HitableList, depth int) models.Pixel {
 
 	willHit, hitRecord := world.Hit(r, 0.0, math.MaxFloat64)
 	if willHit {
-		pN := models.AddVectors(hitRecord.P, hitRecord.N)
-		targetPoint := models.AddVectors(pN, utils.RandomPointInUnitSphere())
-		rayToTargetPoint := models.Ray{
-			Origin:    hitRecord.P,
-			Direction: models.SubtractVectors(targetPoint, hitRecord.P),
+		shouldScatter, attenuation, ray := hitRecord.Material.Scatter(r, hitRecord)
+		if depth < MaxDepth && shouldScatter {
+			colorVector := models.MultiplyVectors(attenuation, Color(ray, world, depth+1))
+			return models.NewPixelFromVector(colorVector)
 		}
-		outputPixelVector := models.MultiplyScalar(Color(rayToTargetPoint, world), 0.5)
-		return models.NewPixelFromVector(outputPixelVector)
-		//pixel := models.MultiplyScalar(models.NewPixel(hitRecord.N.X()+1, hitRecord.N.Y()+1, hitRecord.N.Z()+1), 0.5)
-		//return models.NewPixelFromVector(pixel)
 	}
 
 	var unitDir models.Vector3D = models.UnitVector(r.Direction)

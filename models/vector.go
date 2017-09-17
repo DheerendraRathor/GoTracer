@@ -7,12 +7,18 @@ type Vector interface {
 	Y() float64
 	Z() float64
 	Length() float64
+	Reflect(Vector) Vector3D
 }
 
 type Vector3D struct {
 	x float64
 	y float64
 	z float64
+}
+
+func (v Vector3D) Reflect(n Vector) Vector3D {
+	b2 := MultiplyScalar(n, 2*VectorDotProduct(v, n))
+	return SubtractVectors(v, b2)
 }
 
 func NewVector3D(x, y, z float64) Vector3D {

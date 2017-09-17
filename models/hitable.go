@@ -5,13 +5,18 @@ type Hitable interface {
 }
 
 type HitRecord struct {
-	T float64
-	P Point
-	N Vector3D
+	T        float64
+	P        Point
+	N        Vector3D
+	Material Material
 }
 
 type HitableList struct {
 	List []Hitable
+}
+
+func (hl *HitableList) AddHitable(h Hitable) {
+	hl.List = append(hl.List, h)
 }
 
 func (hl HitableList) Hit(r Ray, tmin, tmax float64) (bool, HitRecord) {
