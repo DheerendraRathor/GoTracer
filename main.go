@@ -23,7 +23,7 @@ func main() {
 	camera := models.NewCamera(lookFrom, lookAt, vUp, 45, 2)
 
 	rows, columns := 200, 400
-	sample := 10
+	sample := 100
 
 	world := models.HitableList{}
 
