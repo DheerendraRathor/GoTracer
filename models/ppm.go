@@ -1,14 +1,11 @@
-package utils
+package models
 
 import (
-	"os"
-
 	"fmt"
-
-	"github.com/DheerendraRathor/GoTracer/models"
+	"os"
 )
 
-func RenderPPM(pixels [][]models.Pixel, filename string) {
+func RenderPPM(pixels [][]Pixel, filename string) {
 	file, err := os.Create(filename)
 	if err != nil {
 		panic(err)

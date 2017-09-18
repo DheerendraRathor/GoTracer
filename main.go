@@ -2,9 +2,14 @@ package main
 
 import (
 	"github.com/DheerendraRathor/GoTracer/models"
-	"github.com/DheerendraRathor/GoTracer/utils"
+	"gopkg.in/cheggaaa/pb.v1"
+	"image"
+	"image/color"
+	"image/png"
 	"math"
 	"math/rand"
+	"os"
+	"sync"
 )
 
 const (
@@ -12,47 +17,83 @@ const (
 )
 
 func main() {
-	camera := models.NewCamera()
-	camera.LowerLeftCorner = models.NewPoint(-4.0, -2.0, -2.0)
-	camera.Horizontal = models.NewVector3D(8, 0, 0)
-	camera.Vertical = models.NewVector3D(0, 4, 0)
-	camera.Origin = models.NewPoint(0, 0.5, 2)
+	lookFrom := models.NewPoint(-3, 1, 0.5)
+	lookAt := models.NewPoint(0, 0, -0.5)
+	vUp := models.NewVector3D(0, 1, 0)
+	camera := models.NewCamera(lookFrom, lookAt, vUp, 45, 2)
 
-	rows, columns := 400, 800
-	sample := 100
-
-	image := make([][]models.Pixel, rows)
-	for i := 0; i < rows; i++ {
-		image[i] = make([]models.Pixel, columns)
-	}
+	rows, columns := 200, 400
+	sample := 10
 
 	world := models.HitableList{}
 
 	world.AddHitable(models.NewSphere(0, 0, -1, 0.5, models.NewLambertian(0.8, 0.3, 0.3)))
-	world.AddHitable(models.NewSphere(0, -100.5, -1, 100, models.NewLambertian(0.8, 0.8, 0)))
-	world.AddHitable(models.NewSphere(1, 0, -1, 0.5, models.NewMetal(0.8, 0.6, 0.2, 0.6)))
-	world.AddHitable(models.NewSphere(-1, 0, -1, 0.5, models.NewMetal(0.8, 0.8, 0.8, 0.1)))
+	world.AddHitable(models.NewSphere(0, -1000.5, -1, 1000, models.NewLambertian(0.8, 0.8, 0)))
+	world.AddHitable(models.NewSphere(1, 0, -1, 0.5, models.NewMetal(0.8, 0.6, 0.2, 0.2)))
+	world.AddHitable(models.NewSphere(-1, 0, -1, 0.5, models.NewDielectric(1.3)))
+	world.AddHitable(models.NewSphere(-1, 0, -1.75, 0.25, models.NewLambertian(0.2, 0.2, 0.7)))
 
+	progress := make(chan bool, 100)
+	var pbWg, renderWg sync.WaitGroup
+
+	// Progress Bar
+	pbWg.Add(1)
+	go func() {
+		defer pbWg.Done()
+		total := rows * columns
+		bar := pb.StartNew(total)
+		for value := range progress {
+			if value {
+				break
+			}
+			bar.Increment()
+		}
+	}()
+
+	pngImage := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{columns, rows}})
+	pngFile, _ := os.Create("myTestImage.png")
+	defer pngFile.Close()
+
+	renderer := make(chan bool, 4)
 	for i := rows - 1; i >= 0; i-- {
 		for j := 0; j < columns; j++ {
-			color := models.NewPixel(0, 0, 0)
-			for s := 0; s < sample; s++ {
-				randFloatu, randFloatv := rand.Float64(), rand.Float64()
-				u, v := (float64(j)+randFloatu)/float64(columns), (float64(i)+randFloatv)/float64(rows)
-				ray := camera.RayAt(u, v)
-				color = models.NewPixelFromVector(
-					models.AddVectors(color, Color(ray, world, 0)),
-				)
-			}
-			color = models.NewPixelFromVector(
-				models.DivideScalar(color, float64(sample)),
-			)
-			color.Gamma2()
-			image[rows-i-1][j] = color
+			renderer <- true
+			renderWg.Add(1)
+			go func(i, j int) {
+				defer func() {
+					<-renderer
+					renderWg.Done()
+				}()
+				ProcessPixel(i, j, rows, columns, sample, &camera, &world, pngImage)
+				progress <- false
+			}(i, j)
 		}
 	}
+	renderWg.Wait()
 
-	utils.RenderPPM(image, "myTestImage2.ppm")
+	progress <- true
+	pbWg.Wait()
+
+	png.Encode(pngFile, pngImage)
+}
+
+func ProcessPixel(i, j, rows, columns, sample int, camera *models.Camera, world *models.HitableList, pngImage *image.RGBA) {
+	pixel := models.NewPixel(0, 0, 0)
+	for s := 0; s < sample; s++ {
+		randFloatu, randFloatv := rand.Float64(), rand.Float64()
+		u, v := (float64(j)+randFloatu)/float64(columns), (float64(i)+randFloatv)/float64(rows)
+		ray := camera.RayAt(u, v)
+		pixel = models.NewPixelFromVector(
+			models.AddVectors(pixel, Color(ray, *world, 0)),
+		)
+	}
+	pixel = models.NewPixelFromVector(
+		models.DivideScalar(pixel, float64(sample)),
+	)
+	pixel.Gamma2()
+	uint8Pixel := pixel.UInt8Pixel()
+	rgba := color.RGBA{uint8Pixel.R, uint8Pixel.G, uint8Pixel.B, 255}
+	pngImage.Set(j, rows-i-1, rgba)
 }
 
 func Color(r models.Ray, world models.HitableList, depth int) models.Pixel {

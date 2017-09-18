@@ -51,20 +51,6 @@ func (s Sphere) Hit(r Ray, tmin, tmax float64) (bool, HitRecord) {
 	return false, record
 }
 
-func (s Sphere) IsHitByRay(r Ray) float64 {
-	oc := SubtractVectors(r.Origin, s.Center)
-	var a, b, c, d float64
-	a = VectorDotProduct(r.Direction, r.Direction)
-	b = 2.0 * VectorDotProduct(oc, r.Direction)
-	c = VectorDotProduct(oc, oc) - s.Radius*s.Radius
-	d = b*b - 4*a*c
-	if d < 0 {
-		return -1
-	} else {
-		return (-b - math.Sqrt(d)) / (2 * a)
-	}
-}
-
 func RandomPointInUnitSphere() Point {
 	var p Point
 	for {

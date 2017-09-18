@@ -7,7 +7,6 @@ type Vector interface {
 	Y() float64
 	Z() float64
 	Length() float64
-	Reflect(Vector) Vector3D
 }
 
 type Vector3D struct {
@@ -19,6 +18,19 @@ type Vector3D struct {
 func (v Vector3D) Reflect(n Vector) Vector3D {
 	b2 := MultiplyScalar(n, 2*VectorDotProduct(v, n))
 	return SubtractVectors(v, b2)
+}
+
+func (v Vector3D) Refract(n Vector, ni, nt float64) (bool, Vector3D) {
+	uv := UnitVector(v)
+	cosθ := VectorDotProduct(uv, n)
+	snellRatio := ni / nt
+	discriminator := 1 - snellRatio*(1-cosθ*cosθ)
+	if discriminator > 0 {
+		v1 := MultiplyScalar(SubtractVectors(v, MultiplyScalar(n, cosθ)), snellRatio)
+		v2 := MultiplyScalar(n, math.Sqrt(discriminator))
+		return true, SubtractVectors(v1, v2)
+	}
+	return false, Vector3D{}
 }
 
 func NewVector3D(x, y, z float64) Vector3D {
@@ -37,7 +49,7 @@ func (v Vector3D) Z() float64 {
 	return v.z
 }
 
-func (v *Vector3D) Negate() Vector3D {
+func (v Vector3D) Negate() Vector3D {
 	return Vector3D{
 		-v.x,
 		-v.y,

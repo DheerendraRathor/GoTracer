@@ -1,5 +1,7 @@
 package models
 
+import "math"
+
 type Camera struct {
 	LowerLeftCorner Point
 	Horizontal      Vector3D
@@ -17,11 +19,28 @@ func (c Camera) RayAt(u, v float64) Ray {
 	}
 }
 
-func NewCamera() Camera {
+func NewCamera(lookFrom, lookAt Point, vup Vector3D, vfov, aspect float64) Camera {
+	theta := vfov * math.Pi / 180
+	half_height := math.Tan(theta / 2)
+
+	wVector := SubtractVectors(lookFrom, lookAt)
+
+	half_height *= wVector.Length()
+	half_width := aspect * half_height
+
+	w := UnitVector(wVector)
+	u := UnitVector(VectorCrossProduct(vup, w))
+	v := VectorCrossProduct(w, u)
+
+	//llc := NewPoint(-half_width, -half_height, -1.0)
+	llc := SubtractVectors(lookFrom, MultiplyScalar(u, half_width))
+	llc = SubtractVectors(llc, MultiplyScalar(v, half_height))
+	llc = SubtractVectors(llc, wVector)
+
 	return Camera{
-		LowerLeftCorner: NewPoint(-2.0, -1.0, -1.0),
-		Horizontal:      NewVector3D(4.0, 0.0, 0.0),
-		Vertical:        NewVector3D(0.0, 2.0, 0.0),
-		Origin:          NewPoint(0.0, 0.0, 0.0),
+		LowerLeftCorner: NewPointByVector(llc),
+		Horizontal:      MultiplyScalar(u, 2*half_width),
+		Vertical:        MultiplyScalar(v, 2*half_height),
+		Origin:          lookFrom,
 	}
 }
