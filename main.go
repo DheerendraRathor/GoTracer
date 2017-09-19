@@ -13,17 +13,18 @@ import (
 )
 
 const (
-	MaxDepth = 10
+	MaxDepth = 100
 )
 
 func main() {
-	lookFrom := models.NewPoint(-3, 1, 0.5)
-	lookAt := models.NewPoint(0, 0, -0.5)
+	lookFrom := models.NewPoint(-2, 1, 0.5)
+	lookAt := models.NewPoint(0, 0, -1)
 	vUp := models.NewVector3D(0, 1, 0)
-	camera := models.NewCamera(lookFrom, lookAt, vUp, 45, 2)
+	focus := models.SubtractVectors(lookFrom, lookAt).Length()
+	camera := models.NewCamera(lookFrom, lookAt, vUp, 45, 2, focus/32, focus)
 
 	rows, columns := 200, 400
-	sample := 100
+	sample := 1000
 
 	world := models.HitableList{}
 
@@ -32,6 +33,7 @@ func main() {
 	world.AddHitable(models.NewSphere(1, 0, -1, 0.5, models.NewMetal(0.8, 0.6, 0.2, 0.2)))
 	world.AddHitable(models.NewSphere(-1, 0, -1, 0.5, models.NewDielectric(1.3)))
 	world.AddHitable(models.NewSphere(-1, 0, -1.75, 0.25, models.NewLambertian(0.2, 0.2, 0.7)))
+	world.AddHitable(models.NewSphere(10, 0.5, -10, 1, models.NewMetal(0.3, 0.4, 0.7, 0.0)))
 
 	progress := make(chan bool, 100)
 	var pbWg, renderWg sync.WaitGroup
@@ -42,6 +44,8 @@ func main() {
 		defer pbWg.Done()
 		total := rows * columns
 		bar := pb.StartNew(total)
+		bar.ShowFinalTime = true
+		bar.ShowTimeLeft = false
 		for value := range progress {
 			if value {
 				break
@@ -78,17 +82,16 @@ func main() {
 }
 
 func ProcessPixel(i, j, rows, columns, sample int, camera *models.Camera, world *models.HitableList, pngImage *image.RGBA) {
-	pixel := models.NewPixel(0, 0, 0)
+	colorVector := models.NewVector3D(0, 0, 0)
 	for s := 0; s < sample; s++ {
 		randFloatu, randFloatv := rand.Float64(), rand.Float64()
 		u, v := (float64(j)+randFloatu)/float64(columns), (float64(i)+randFloatv)/float64(rows)
 		ray := camera.RayAt(u, v)
-		pixel = models.NewPixelFromVector(
-			models.AddVectors(pixel, Color(ray, *world, 0)),
-		)
+		colorVector = models.AddVectors(colorVector, Color(ray, *world, 0))
 	}
-	pixel = models.NewPixelFromVector(
-		models.DivideScalar(pixel, float64(sample)),
+
+	pixel := models.NewPixelFromVector(
+		models.DivideScalar(colorVector, float64(sample)),
 	)
 	pixel.Gamma2()
 	uint8Pixel := pixel.UInt8Pixel()
