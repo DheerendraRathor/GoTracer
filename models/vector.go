@@ -37,6 +37,10 @@ func NewVector3D(x, y, z float64) Vector3D {
 	return Vector3D{x, y, z}
 }
 
+func NewVector3DFromArray(input [3]float64) Vector3D {
+	return Vector3D{input[0], input[1], input[2]}
+}
+
 func (v Vector3D) X() float64 {
 	return v.x
 }

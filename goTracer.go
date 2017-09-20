@@ -1,66 +1,87 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
+	"fmt"
 	"github.com/DheerendraRathor/GoTracer/models"
+	"github.com/DheerendraRathor/GoTracer/utils"
 	"gopkg.in/cheggaaa/pb.v1"
 	"image"
 	"image/color"
 	"image/png"
+	"io/ioutil"
 	"math"
 	"math/rand"
-	"os"
+	"runtime"
 	"sync"
 )
 
-const (
-	MaxDepth = 100
-)
+var MaxRenderDepth int = 10
+
+var renderSpecFile string
+
+func init() {
+	flag.StringVar(&renderSpecFile, "spec", "sample_world.json", "Name of JSON file containing rendering spec")
+}
 
 func main() {
-	lookFrom := models.NewPoint(-2, 1, 0.5)
-	lookAt := models.NewPoint(0, 0, -1)
-	vUp := models.NewVector3D(0, 1, 0)
-	focus := models.SubtractVectors(lookFrom, lookAt).Length()
-	camera := models.NewCamera(lookFrom, lookAt, vUp, 45, 2, focus/32, focus)
 
-	rows, columns := 200, 400
-	sample := 1000
+	file, e := ioutil.ReadFile(renderSpecFile)
+	if e != nil {
+		panic(fmt.Sprintf("File error: %v\n", e))
+	}
 
-	world := models.HitableList{}
+	var env models.World
+	json.Unmarshal(file, &env)
 
-	world.AddHitable(models.NewSphere(0, 0, -1, 0.5, models.NewLambertian(0.8, 0.3, 0.3)))
-	world.AddHitable(models.NewSphere(0, -1000.5, -1, 1000, models.NewLambertian(0.8, 0.8, 0)))
-	world.AddHitable(models.NewSphere(1, 0, -1, 0.5, models.NewMetal(0.8, 0.6, 0.2, 0.2)))
-	world.AddHitable(models.NewSphere(-1, 0, -1, 0.5, models.NewDielectric(1.3)))
-	world.AddHitable(models.NewSphere(-1, 0, -1.75, 0.25, models.NewLambertian(0.2, 0.2, 0.7)))
-	world.AddHitable(models.NewSphere(10, 0.5, -10, 1, models.NewMetal(0.3, 0.4, 0.7, 0.0)))
+	if env.Settings.RenderDepth > 0 {
+		MaxRenderDepth = env.Settings.RenderDepth
+	}
+
+	camera := env.GetCamera()
+
+	rows, columns := env.Image.Rows, env.Image.Columns
+	sample := env.Image.Samples
+
+	world := env.GetHitableList()
 
 	progress := make(chan bool, 100)
+	defer close(progress)
+
 	var pbWg, renderWg sync.WaitGroup
 
-	// Progress Bar
-	pbWg.Add(1)
-	go func() {
-		defer pbWg.Done()
-		total := rows * columns
-		bar := pb.StartNew(total)
-		bar.ShowFinalTime = true
-		bar.ShowTimeLeft = false
-		for value := range progress {
-			if value {
-				break
+	if env.Settings.ShowProgress {
+		// Progress Bar
+		pbWg.Add(1)
+		go func() {
+			defer pbWg.Done()
+			total := rows * columns
+			bar := pb.StartNew(total)
+			bar.ShowFinalTime = true
+			bar.ShowTimeLeft = false
+			for value := range progress {
+				if value {
+					break
+				}
+				bar.Increment()
 			}
-			bar.Increment()
-		}
-	}()
+		}()
+	}
 
 	pngImage := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{columns, rows}})
-	pngFile, _ := os.Create("myTestImage.png")
+	pngFile := utils.CreateNestedFile(env.Image.OutputFile)
 	defer pngFile.Close()
 
-	renderer := make(chan bool, 4)
-	for i := rows - 1; i >= 0; i-- {
-		for j := 0; j < columns; j++ {
+	renderRoutines := env.Settings.RenderRoutines
+	if renderRoutines <= 0 {
+		renderRoutines = runtime.NumCPU()
+	}
+	renderer := make(chan bool, renderRoutines)
+	defer close(renderer)
+
+	for i := env.Image.IMax - 1; i >= env.Image.IMin; i-- {
+		for j := env.Image.JMin; j < env.Image.JMax; j++ {
 			renderer <- true
 			renderWg.Add(1)
 			go func(i, j int) {
@@ -69,14 +90,18 @@ func main() {
 					renderWg.Done()
 				}()
 				ProcessPixel(i, j, rows, columns, sample, &camera, &world, pngImage)
-				progress <- false
+				if env.Settings.ShowProgress {
+					progress <- false
+				}
 			}(i, j)
 		}
 	}
 	renderWg.Wait()
 
-	progress <- true
-	pbWg.Wait()
+	if env.Settings.ShowProgress {
+		progress <- true
+		pbWg.Wait()
+	}
 
 	png.Encode(pngFile, pngImage)
 }
@@ -99,13 +124,13 @@ func ProcessPixel(i, j, rows, columns, sample int, camera *models.Camera, world 
 	pngImage.Set(j, rows-i-1, rgba)
 }
 
-func Color(r models.Ray, world models.HitableList, depth int) models.Pixel {
+func Color(r models.Ray, world models.HitableList, renderDepth int) models.Pixel {
 
 	willHit, hitRecord := world.Hit(r, 0.0, math.MaxFloat64)
 	if willHit {
 		shouldScatter, attenuation, ray := hitRecord.Material.Scatter(r, hitRecord)
-		if depth < MaxDepth && shouldScatter {
-			colorVector := models.MultiplyVectors(attenuation, Color(ray, world, depth+1))
+		if renderDepth < MaxRenderDepth && shouldScatter {
+			colorVector := models.MultiplyVectors(attenuation, Color(ray, world, renderDepth+1))
 			return models.NewPixelFromVector(colorVector)
 		}
 	}

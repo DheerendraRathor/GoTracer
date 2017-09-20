@@ -14,6 +14,12 @@ func NewPoint(x, y, z float64) Point {
 	}
 }
 
+func NewPointByArray(input [3]float64) Point {
+	return Point{
+		NewVector3DFromArray(input),
+	}
+}
+
 func NewPointByVector(v Vector) Point {
 	return Point{
 		Vector3D{

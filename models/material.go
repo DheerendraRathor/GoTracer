@@ -13,9 +13,9 @@ type Lambertian struct {
 	albedo Vector3D
 }
 
-func NewLambertian(x, y, z float64) Lambertian {
+func NewLambertian(albedo Vector3D) Lambertian {
 	return Lambertian{
-		albedo: NewVector3D(x, y, z),
+		albedo: albedo,
 	}
 }
 
@@ -34,9 +34,9 @@ type Metal struct {
 	fuzz   float64
 }
 
-func NewMetal(x, y, z, fuzz float64) Metal {
+func NewMetal(albedo Vector3D, fuzz float64) Metal {
 	return Metal{
-		albedo: NewVector3D(x, y, z),
+		albedo: albedo,
 		fuzz:   fuzz,
 	}
 }
@@ -53,11 +53,11 @@ func (m Metal) Scatter(ray Ray, hitRecord HitRecord) (bool, Vector3D, Ray) {
 
 type Dielectric struct {
 	RefIndex float64
+	albedo   Vector3D
 }
 
 func (d Dielectric) Scatter(ray Ray, hitRecord HitRecord) (bool, Vector3D, Ray) {
 	reflected := ray.Direction.Reflect(hitRecord.N)
-	attenuation := NewVector3D(1, 1, 1)
 	var outwardNormal Vector3D
 	var ni, nt float64 = 1, 1
 	var cosine, reflectionProb float64
@@ -86,11 +86,12 @@ func (d Dielectric) Scatter(ray Ray, hitRecord HitRecord) (bool, Vector3D, Ray) 
 		scattered = Ray{hitRecord.P, reflected}
 	}
 
-	return true, attenuation, scattered
+	return true, d.albedo, scattered
 }
 
-func NewDielectric(r float64) Dielectric {
+func NewDielectric(albedo Vector3D, r float64) Dielectric {
 	return Dielectric{
+		albedo:   albedo,
 		RefIndex: r,
 	}
 }

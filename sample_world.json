@@ -1,0 +1,40 @@
+{
+  "Settings": {
+    "ShowProgress": true,
+    "RenderRoutines": -1,
+    "RenderDepth": 10
+  },
+  "Image": {
+    "OutputFile": "./out/renderedImage.png",
+    "Rows": 200,
+    "Columns": 400,
+    "Samples": 10,
+    "IMin": 0,
+    "IMax": 200,
+    "JMin": 0,
+    "JMax": 400
+  },
+  "Camera": {
+    "LookFrom": [-2, 1, 0.5],
+    "LookAt": [0, 0, -1],
+    "UpVector": [0, 1, 0],
+    "FieldOfView": 45,
+    "AspectRatio": 2,
+    "Focus": 2.69,
+    "Aperture": 0.04
+  },
+  "Objects": {
+    "Spheres": [
+      {
+        "Center": [0, 0, -1],
+        "Radius": 0.5,
+        "Surface": {
+          "Type": "Lambertian",
+          "Albedo": [0.8, 0.1, 0.1],
+          "Fuzz": 0.1,
+          "RefIndex": 1.3
+        }
+      }
+    ]
+  }
+}
