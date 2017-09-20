@@ -1,0 +1,81 @@
+{
+  "Settings": {
+    "ShowProgress": true,
+    "RenderRoutines": -1,
+    "RenderDepth": 10
+  },
+  "Image": {
+    "OutputFile": "./examples/renderedFiveSpheres.png",
+    "Height": 400,
+    "Width": 800,
+    "Samples": 100,
+    "IMin": 0,
+    "IMax": 400,
+    "JMin": 0,
+    "JMax": 800
+  },
+  "Camera": {
+    "LookFrom": [-2, 1, 0.5],
+    "LookAt": [0, 0, -1],
+    "UpVector": [0, 1, 0],
+    "FieldOfView": 45,
+    "AspectRatio": 2,
+    "Focus": 2.69,
+    "Aperture": 0.04
+  },
+  "Objects": {
+    "Spheres": [
+      {
+        "Center": [0, 0, -1],
+        "Radius": 0.5,
+        "Surface": {
+          "Type": "Lambertian",
+          "Albedo": [0.8, 0.1, 0.1]
+        }
+      },
+      {
+        "Center": [0, -1000.5, 0],
+        "Radius": 1000,
+        "Surface": {
+          "Type": "Lambertian",
+          "Albedo": [0.8, 0.8, 0.2]
+        }
+      },
+      {
+        "Center": [1, 0, -1],
+        "Radius": 0.5,
+        "Surface": {
+          "Type": "Metal",
+          "Albedo": [0.8, 0.3, 0.5],
+          "Fuzz": 0.2
+        }
+      },
+      {
+        "Center": [-1, 0, -1],
+        "Radius": 0.5,
+        "Surface": {
+          "Type": "Dielectric",
+          "Albedo": [1.0, 1.0, 1.0],
+          "RefIndex": 1.3
+        }
+      },
+      {
+        "Center": [-1, 0, -1.75],
+        "Radius": 0.25,
+        "Surface": {
+          "Type": "Lambertian",
+          "Albedo": [0.2, 0.3, 0.7]
+        }
+      },
+      {
+        "Center": [10, 0.5, -10],
+        "Radius": 1,
+        "Surface": {
+          "Type": "Metal",
+          "Albedo": [0.3, 0.4, 0.7],
+          "Fuzz": 0.0
+        }
+      }
+    ]
+  }
+}
