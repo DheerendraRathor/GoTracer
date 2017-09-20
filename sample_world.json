@@ -6,8 +6,8 @@
   },
   "Image": {
     "OutputFile": "./out/renderedImage.png",
-    "Rows": 200,
-    "Columns": 400,
+    "Width": 400,
+    "Height": 200,
     "Samples": 10,
     "IMin": 0,
     "IMax": 200,
