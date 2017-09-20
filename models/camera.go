@@ -27,7 +27,7 @@ func (c Camera) RayAt(u, v float64) Ray {
 	}
 }
 
-func NewCamera(lookFrom, lookAt Point, vup Vector3D, vfov, aspect, aperture, focus float64) Camera {
+func NewCamera(lookFrom, lookAt Point, vup Vector3D, vfov, aspect, aperture, focus float64) *Camera {
 	theta := vfov * math.Pi / 180
 	half_height := math.Tan(theta / 2)
 
@@ -43,7 +43,7 @@ func NewCamera(lookFrom, lookAt Point, vup Vector3D, vfov, aspect, aperture, foc
 	llc = SubtractVectors(llc, MultiplyScalar(v, half_height*focus))
 	llc = SubtractVectors(llc, MultiplyScalar(w, focus))
 
-	return Camera{
+	return &Camera{
 		LowerLeftCorner: NewPointByVector(llc),
 		Horizontal:      MultiplyScalar(u, 2*half_width*focus),
 		Vertical:        MultiplyScalar(v, 2*half_height*focus),

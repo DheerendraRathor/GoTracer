@@ -13,8 +13,8 @@ const (
 
 type ImageInput struct {
 	OutputFile string
-	Rows       int
-	Columns    int
+	Height     int
+	Width      int
 	Samples    int
 	IMin       int
 	IMax       int
@@ -62,21 +62,21 @@ type World struct {
 	Objects  ObjectsInput
 }
 
-func (w World) GetCamera() Camera {
+func (w World) GetCamera() *Camera {
 	lookFrom := NewPointByArray(w.Camera.LookFrom)
 	lookAt := NewPointByArray(w.Camera.LookAt)
 	vup := NewVector3DFromArray(w.Camera.UpVector)
 	return NewCamera(lookFrom, lookAt, vup, w.Camera.FieldOfView, w.Camera.AspectRatio, w.Camera.Aperture, w.Camera.Focus)
 }
 
-func (w World) GetHitableList() HitableList {
+func (w World) GetHitableList() *HitableList {
 	world := HitableList{}
 
 	for _, sphere := range w.Objects.Spheres {
 		world.AddHitable(sphere.getSphere())
 	}
 
-	return world
+	return &world
 }
 
 func (s SphereInput) getSphere() Sphere {
