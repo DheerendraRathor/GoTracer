@@ -37,8 +37,10 @@ func GoTrace(env *models.World, progress chan<- bool) {
 	renderer := make(chan bool, renderRoutines)
 	defer close(renderer)
 
-	for i := env.Image.IMax - 1; i >= env.Image.IMin; i-- {
-		for j := env.Image.JMin; j < env.Image.JMax; j++ {
+	imin, imax, jmin, jmax := env.Image.GetPatch()
+
+	for i := imax - 1; i >= imin; i-- {
+		for j := jmin; j < jmax; j++ {
 			renderer <- true
 			renderWg.Add(1)
 			go func(i, j, samples int, camera *models.Camera, world *models.HitableList, pngImage *image.RGBA) {

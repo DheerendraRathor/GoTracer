@@ -22,10 +22,7 @@ This program takes a JSON specification of environment to be traced. Currently o
     "Width": 400,
     "Height": 200,
     "Samples": 10,
-    "IMin": 0,
-    "IMax": 200,
-    "JMin": 0,
-    "JMax": 400
+    "Patch": [0, 200, 0, 400]
   },
   "Camera": {
     "LookFrom": [-2, 1, 0.5],
@@ -98,24 +95,25 @@ This program takes a JSON specification of environment to be traced. Currently o
             <td>Number of samples per pixel</td>
         </tr>
         <tr>
-            <td>IMin, IMax, JMin, JMax</td>
-            <td>integer</td>
-            <td>Defines specific patch of image to be rendered</td>
+            <td>Patch</td>
+            <td>list[int][4]</td>
+            <td>Defines specific patch of image to be rendered. Patch is defined as [x0, y0, x1, y1] and all points
+            (x, y) are considered given that x0 &le; x &lt; x1 and y0 &le; y &lt; y1 </td>
         </tr>
         <tr>
             <td rowspan="7">Camera</td>
             <td>LookFrom</td>
-            <td>list3</td>
+            <td>list[float][3]</td>
             <td>Coordinates of camera lens</td>
         </tr>
         <tr>
             <td>LookAt</td>
-            <td>list3</td>
+            <td>list[float][3]</td>
             <td>Coordinate of point where camera is pointed.</td>
         </tr>
         <tr>
             <td>UpVector</td>
-            <td>list3</td>
+            <td>list[float][3]</td>
             <td>Point defining direction of up direction for camera</td>
         </tr>
         <tr>
@@ -147,7 +145,7 @@ This program takes a JSON specification of environment to be traced. Currently o
         <tr>
             <td rowspan=3>Sphere</td>
             <td>Center</td>
-            <td>list3</td>
+            <td>list[float][3]</td>
             <td>Center of sphere</td>
         </tr>
         <tr>
@@ -168,7 +166,7 @@ This program takes a JSON specification of environment to be traced. Currently o
         </tr>
         <tr>
             <td>Albedo</td>
-            <td>list3</td>
+            <td>list[float][3]</td>
             <td>Albedo of Material</td>
         </tr>
         <tr>
@@ -184,7 +182,7 @@ This program takes a JSON specification of environment to be traced. Currently o
     </tbody>
 </table>
 
-**Note**: list3 => list of 3 float elements
+**Note**: list[x][n] => list of elements of type x with size n
 
 ## Usages
 ```bash

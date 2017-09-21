@@ -16,10 +16,11 @@ type ImageInput struct {
 	Height     int
 	Width      int
 	Samples    int
-	IMin       int
-	IMax       int
-	JMin       int
-	JMax       int
+	Patch      [4]int
+}
+
+func (i *ImageInput) GetPatch() (int, int, int, int) {
+	return i.Patch[0], i.Patch[1], i.Patch[2], i.Patch[3]
 }
 
 type CameraInput struct {

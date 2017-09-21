@@ -9,10 +9,7 @@
     "Height": 400,
     "Width": 800,
     "Samples": 100,
-    "IMin": 0,
-    "IMax": 400,
-    "JMin": 0,
-    "JMax": 800
+    "Patch": [0, 400, 0, 800]
   },
   "Camera": {
     "LookFrom": [-2, 1, 0.5],
