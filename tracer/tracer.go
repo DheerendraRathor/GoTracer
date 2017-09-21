@@ -14,7 +14,7 @@ import (
 
 var MaxRenderDepth int = 10
 
-func GoTrace(env *models.World, progress <-chan bool) {
+func GoTrace(env *models.World, progress chan<- bool) {
 	if env.Settings.RenderDepth > 0 {
 		MaxRenderDepth = env.Settings.RenderDepth
 	}
