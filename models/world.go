@@ -80,15 +80,15 @@ func (w World) GetHitableList() *HitableList {
 	return &world
 }
 
-func (s SphereInput) getSphere() Sphere {
-	return Sphere{
+func (s SphereInput) getSphere() *Sphere {
+	return &Sphere{
 		Radius:   s.Radius,
 		Center:   NewPointByArray(s.Center),
 		Material: s.Surface.getMaterial(),
 	}
 }
 
-func (s SurfaceInput) getMaterial() Material {
+func (s *SurfaceInput) getMaterial() Material {
 
 	var material Material
 

@@ -3,7 +3,7 @@ package models
 import "math"
 
 type Pixel struct {
-	Vector3D
+	*Vector3D
 }
 
 func (p *Pixel) R() float64 {
@@ -34,7 +34,7 @@ func (p *Pixel) UInt8Pixel() Uint8Pixel {
 
 func NewPixel(r, g, b float64) Pixel {
 	return Pixel{
-		Vector3D{
+		&Vector3D{
 			r,
 			g,
 			b,
@@ -42,9 +42,9 @@ func NewPixel(r, g, b float64) Pixel {
 	}
 }
 
-func NewPixelFromVector(v Vector) Pixel {
-	return Pixel{
-		Vector3D{
+func NewPixelFromVector(v Vector) *Pixel {
+	return &Pixel{
+		&Vector3D{
 			v.X(),
 			v.Y(),
 			v.Z(),

@@ -1,6 +1,6 @@
 {
   "Settings": {
-    "ShowProgress": true,
+    "ShowProgress": false,
     "RenderRoutines": -1,
     "RenderDepth": 10
   },

@@ -70,7 +70,7 @@ func processPixel(i, j, imageWidth, imageHeight, sample int, camera *models.Came
 		randFloatu, randFloatv := rand.Float64(), rand.Float64()
 		u, v := (float64(j)+randFloatu)/float64(imageWidth), (float64(i)+randFloatv)/float64(imageHeight)
 		ray := camera.RayAt(u, v)
-		colorVector = models.AddVectors(colorVector, getColor(ray, *world, 0))
+		colorVector = models.AddVectors(colorVector, getColor(ray, world, 0))
 	}
 
 	pixel := models.NewPixelFromVector(
@@ -82,7 +82,7 @@ func processPixel(i, j, imageWidth, imageHeight, sample int, camera *models.Came
 	pngImage.Set(j, imageHeight-i-1, rgba)
 }
 
-func getColor(r models.Ray, world models.HitableList, renderDepth int) models.Pixel {
+func getColor(r *models.Ray, world *models.HitableList, renderDepth int) *models.Pixel {
 
 	willHit, hitRecord := world.Hit(r, 0.0, math.MaxFloat64)
 	if willHit {
@@ -93,15 +93,15 @@ func getColor(r models.Ray, world models.HitableList, renderDepth int) models.Pi
 		}
 	}
 
-	var unitDir models.Vector3D = models.UnitVector(r.Direction)
+	unitDir := models.UnitVector(r.Direction)
 	t := 0.5 * (unitDir.Y() + 1.0)
-	var startValue, endValue models.Vector3D
+	var startValue, endValue, startBlend, endBlend *models.Vector3D
 	startValue = models.NewVector3D(1.0, 1.0, 1.0)
 	endValue = models.NewVector3D(0.5, 0.7, 1.0)
-	var startBlend models.Vector3D = models.MultiplyScalar(startValue, 1-t)
-	var endBlend models.Vector3D = models.MultiplyScalar(endValue, t)
-	return models.Pixel{
+
+	startBlend = models.MultiplyScalar(startValue, 1-t)
+	endBlend = models.MultiplyScalar(endValue, t)
+	return &models.Pixel{
 		Vector3D: models.AddVectors(startBlend, endBlend),
 	}
-
 }

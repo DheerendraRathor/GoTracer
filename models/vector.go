@@ -15,12 +15,12 @@ type Vector3D struct {
 	z float64
 }
 
-func (v Vector3D) Reflect(n Vector) Vector3D {
+func Reflect(v, n Vector) *Vector3D {
 	b2 := MultiplyScalar(n, 2*VectorDotProduct(v, n))
 	return SubtractVectors(v, b2)
 }
 
-func (v Vector3D) Refract(n Vector, ni, nt float64) (bool, Vector3D) {
+func Refract(v, n Vector, ni, nt float64) (bool, *Vector3D) {
 	uv := UnitVector(v)
 	cosθ := VectorDotProduct(uv, n)
 	snellRatio := ni / nt
@@ -30,31 +30,31 @@ func (v Vector3D) Refract(n Vector, ni, nt float64) (bool, Vector3D) {
 		v2 := MultiplyScalar(n, math.Sqrt(discriminator))
 		return true, SubtractVectors(v1, v2)
 	}
-	return false, Vector3D{}
+	return false, nil
 }
 
-func NewVector3D(x, y, z float64) Vector3D {
-	return Vector3D{x, y, z}
+func NewVector3D(x, y, z float64) *Vector3D {
+	return &Vector3D{x, y, z}
 }
 
-func NewVector3DFromArray(input [3]float64) Vector3D {
-	return Vector3D{input[0], input[1], input[2]}
+func NewVector3DFromArray(input [3]float64) *Vector3D {
+	return &Vector3D{input[0], input[1], input[2]}
 }
 
-func (v Vector3D) X() float64 {
+func (v *Vector3D) X() float64 {
 	return v.x
 }
 
-func (v Vector3D) Y() float64 {
+func (v *Vector3D) Y() float64 {
 	return v.y
 }
 
-func (v Vector3D) Z() float64 {
+func (v *Vector3D) Z() float64 {
 	return v.z
 }
 
-func (v Vector3D) Negate() Vector3D {
-	return Vector3D{
+func Negate(v *Vector3D) *Vector3D {
+	return &Vector3D{
 		-v.x,
 		-v.y,
 		-v.z,
@@ -100,57 +100,57 @@ func (v *Vector3D) MakeUnitVector() {
 	v.z /= length
 }
 
-func UnitVector(v Vector) Vector3D {
+func UnitVector(v Vector) *Vector3D {
 	length := v.Length()
-	return Vector3D{
+	return &Vector3D{
 		v.X() / length,
 		v.Y() / length,
 		v.Z() / length,
 	}
 }
 
-func MultiplyScalar(v Vector, t float64) Vector3D {
-	return Vector3D{
+func MultiplyScalar(v Vector, t float64) *Vector3D {
+	return &Vector3D{
 		v.X() * t,
 		v.Y() * t,
 		v.Z() * t,
 	}
 }
 
-func DivideScalar(v Vector, t float64) Vector3D {
-	return Vector3D{
+func DivideScalar(v Vector, t float64) *Vector3D {
+	return &Vector3D{
 		v.X() / t,
 		v.Y() / t,
 		v.Z() / t,
 	}
 }
 
-func AddVectors(v1, v2 Vector) Vector3D {
-	return Vector3D{
+func AddVectors(v1, v2 Vector) *Vector3D {
+	return &Vector3D{
 		v1.X() + v2.X(),
 		v1.Y() + v2.Y(),
 		v1.Z() + v2.Z(),
 	}
 }
 
-func SubtractVectors(v1, v2 Vector) Vector3D {
-	return Vector3D{
+func SubtractVectors(v1, v2 Vector) *Vector3D {
+	return &Vector3D{
 		v1.X() - v2.X(),
 		v1.Y() - v2.Y(),
 		v1.Z() - v2.Z(),
 	}
 }
 
-func MultiplyVectors(v1, v2 Vector) Vector3D {
-	return Vector3D{
+func MultiplyVectors(v1, v2 Vector) *Vector3D {
+	return &Vector3D{
 		v1.X() * v2.X(),
 		v1.Y() * v2.Y(),
 		v1.Z() * v2.Z(),
 	}
 }
 
-func DivideVectors(v1, v2 Vector) Vector3D {
-	return Vector3D{
+func DivideVectors(v1, v2 Vector) *Vector3D {
+	return &Vector3D{
 		v1.X() / v2.X(),
 		v1.Y() / v2.Y(),
 		v1.Z() / v2.Z(),
@@ -161,8 +161,8 @@ func VectorDotProduct(v1, v2 Vector) float64 {
 	return v1.X()*v2.X() + v1.Y()*v2.Y() + v1.Z()*v2.Z()
 }
 
-func VectorCrossProduct(v1, v2 Vector) Vector3D {
-	return Vector3D{
+func VectorCrossProduct(v1, v2 Vector) *Vector3D {
+	return &Vector3D{
 		v1.Y()*v2.Z() - v1.Z()*v2.Y(),
 		-v1.X()*v2.Z() - v1.X()*v2.X(),
 		v1.X()*v2.Y() - v1.Y()*v2.X(),

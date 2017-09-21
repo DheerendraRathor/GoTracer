@@ -6,13 +6,13 @@ import (
 )
 
 type Camera struct {
-	LowerLeftCorner, Origin Point
-	Horizontal, Vertical    Vector3D
+	LowerLeftCorner, Origin *Point
+	Horizontal, Vertical    *Vector3D
 	LensRadius              float64
-	U, V, W                 Vector3D
+	U, V, W                 *Vector3D
 }
 
-func (c Camera) RayAt(u, v float64) Ray {
+func (c *Camera) RayAt(u, v float64) *Ray {
 
 	rd := MultiplyScalar(RandomPointInUnitDisk(), c.LensRadius)
 	offset := AddVectors(MultiplyScalar(c.U, rd.X()), MultiplyScalar(c.V, rd.Y()))
@@ -21,13 +21,13 @@ func (c Camera) RayAt(u, v float64) Ray {
 	horizontalDir := AddVectors(c.LowerLeftCorner, MultiplyScalar(c.Horizontal, u))
 	compositeDir := AddVectors(horizontalDir, MultiplyScalar(c.Vertical, v))
 	compositeDir = SubtractVectors(compositeDir, origin)
-	return Ray{
+	return &Ray{
 		NewPointByVector(origin),
 		compositeDir,
 	}
 }
 
-func NewCamera(lookFrom, lookAt Point, vup Vector3D, vfov, aspect, aperture, focus float64) *Camera {
+func NewCamera(lookFrom, lookAt *Point, vup *Vector3D, vfov, aspect, aperture, focus float64) *Camera {
 	theta := vfov * math.Pi / 180
 	half_height := math.Tan(theta / 2)
 
@@ -55,8 +55,8 @@ func NewCamera(lookFrom, lookAt Point, vup Vector3D, vfov, aspect, aperture, foc
 	}
 }
 
-func RandomPointInUnitDisk() Point {
-	var p Point
+func RandomPointInUnitDisk() *Point {
+	var p *Point
 	for {
 		x, y, z := 2*rand.Float64()-1, 2*rand.Float64()-1, 0.0
 		p = NewPoint(x, y, z)

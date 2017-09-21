@@ -6,63 +6,71 @@ import (
 )
 
 type Material interface {
-	Scatter(Ray, HitRecord) (bool, Vector3D, Ray)
+	Scatter(*Ray, *HitRecord) (bool, *Vector3D, *Ray)
+}
+
+type BaseMaterial struct {
+	Albedo *Vector3D
 }
 
 type Lambertian struct {
-	albedo Vector3D
+	*BaseMaterial
 }
 
-func NewLambertian(albedo Vector3D) Lambertian {
-	return Lambertian{
-		albedo: albedo,
+func NewLambertian(albedo *Vector3D) *Lambertian {
+	return &Lambertian{
+		&BaseMaterial{
+			Albedo: albedo,
+		},
 	}
 }
 
-func (l Lambertian) Scatter(ray Ray, hitRecord HitRecord) (bool, Vector3D, Ray) {
+func (l *Lambertian) Scatter(ray *Ray, hitRecord *HitRecord) (bool, *Vector3D, *Ray) {
 	pN := AddVectors(hitRecord.P, hitRecord.N)
 	targetPoint := AddVectors(pN, RandomPointInUnitSphere())
 	scattered := Ray{
 		Origin:    hitRecord.P,
 		Direction: SubtractVectors(targetPoint, hitRecord.P),
 	}
-	return true, l.albedo, scattered
+	return true, l.Albedo, &scattered
 }
 
 type Metal struct {
-	albedo Vector3D
-	fuzz   float64
+	*BaseMaterial
+	fuzz float64
 }
 
-func NewMetal(albedo Vector3D, fuzz float64) Metal {
-	return Metal{
-		albedo: albedo,
-		fuzz:   fuzz,
+func NewMetal(albedo *Vector3D, fuzz float64) *Metal {
+	return &Metal{
+		BaseMaterial: &BaseMaterial{
+			albedo,
+		},
+		fuzz: fuzz,
 	}
 }
 
-func (m Metal) Scatter(ray Ray, hitRecord HitRecord) (bool, Vector3D, Ray) {
-	reflected := UnitVector(ray.Direction.Reflect(hitRecord.N))
+func (m Metal) Scatter(ray *Ray, hitRecord *HitRecord) (bool, *Vector3D, *Ray) {
+	reflected := UnitVector(Reflect(ray.Direction, hitRecord.N))
 	scattered := Ray{
 		hitRecord.P,
 		AddVectors(reflected, MultiplyScalar(RandomPointInUnitSphere(), m.fuzz)),
 	}
 	shouldScatter := VectorDotProduct(reflected, hitRecord.N) > 0
-	return shouldScatter, m.albedo, scattered
+	return shouldScatter, m.Albedo, &scattered
 }
 
 type Dielectric struct {
+	*BaseMaterial
 	RefIndex float64
-	albedo   Vector3D
 }
 
-func (d Dielectric) Scatter(ray Ray, hitRecord HitRecord) (bool, Vector3D, Ray) {
-	reflected := ray.Direction.Reflect(hitRecord.N)
-	var outwardNormal Vector3D
+func (d *Dielectric) Scatter(ray *Ray, hitRecord *HitRecord) (bool, *Vector3D, *Ray) {
+	reflected := Reflect(ray.Direction, hitRecord.N)
+	var outwardNormal *Vector3D
 	var ni, nt float64 = 1, 1
 	var cosine, reflectionProb float64
 	if VectorDotProduct(ray.Direction, hitRecord.N) > 0 {
-		outwardNormal = hitRecord.N.Negate()
+		outwardNormal = Negate(hitRecord.N)
 		ni = d.RefIndex
 		nt = 1
 		cosine = d.RefIndex * VectorDotProduct(ray.Direction, hitRecord.N) * ray.Direction.Length()
@@ -73,25 +81,27 @@ func (d Dielectric) Scatter(ray Ray, hitRecord HitRecord) (bool, Vector3D, Ray) 
 		cosine = -VectorDotProduct(ray.Direction, hitRecord.N) * ray.Direction.Length()
 	}
 
-	var scattered Ray
-	willRefract, refractedVec := ray.Direction.Refract(outwardNormal, ni, nt)
+	var scattered *Ray
+	willRefract, refractedVec := Refract(ray.Direction, outwardNormal, ni, nt)
 	if willRefract {
 		reflectionProb = utils.Schlick(cosine, 1, d.RefIndex)
-		scattered = Ray{hitRecord.P, refractedVec}
+		scattered = &Ray{hitRecord.P, refractedVec}
 	} else {
 		reflectionProb = 1.0
 	}
 
 	if rand.Float64() < reflectionProb {
-		scattered = Ray{hitRecord.P, reflected}
+		scattered = &Ray{hitRecord.P, reflected}
 	}
 
-	return true, d.albedo, scattered
+	return true, d.Albedo, scattered
 }
 
-func NewDielectric(albedo Vector3D, r float64) Dielectric {
-	return Dielectric{
-		albedo:   albedo,
+func NewDielectric(albedo *Vector3D, r float64) *Dielectric {
+	return &Dielectric{
+		BaseMaterial: &BaseMaterial{
+			Albedo: albedo,
+		},
 		RefIndex: r,
 	}
 }

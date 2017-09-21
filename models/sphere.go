@@ -6,20 +6,20 @@ import (
 )
 
 type Sphere struct {
-	Center   Point
+	Center   *Point
 	Radius   float64
 	Material Material
 }
 
-func NewSphere(x, y, z, r float64, albedo Material) Sphere {
-	return Sphere{
+func NewSphere(x, y, z, r float64, material Material) *Sphere {
+	return &Sphere{
 		NewPoint(x, y, z),
 		r,
-		albedo,
+		material,
 	}
 }
 
-func (s Sphere) Hit(r Ray, tmin, tmax float64) (bool, HitRecord) {
+func (s *Sphere) Hit(r *Ray, tmin, tmax float64) (bool, *HitRecord) {
 	oc := SubtractVectors(r.Origin, s.Center)
 	var a, b, c, d float64
 	a = VectorDotProduct(r.Direction, r.Direction)
@@ -37,7 +37,7 @@ func (s Sphere) Hit(r Ray, tmin, tmax float64) (bool, HitRecord) {
 			record.P = r.PointAtParameter(temp)
 			record.N = UnitVector(SubtractVectors(record.P, s.Center))
 			record.Material = s.Material
-			return true, record
+			return true, &record
 		}
 		temp = (-b + sqrtD) / a2
 		if temp > tmin && temp < tmax {
@@ -45,14 +45,14 @@ func (s Sphere) Hit(r Ray, tmin, tmax float64) (bool, HitRecord) {
 			record.P = r.PointAtParameter(temp)
 			record.N = UnitVector(SubtractVectors(record.P, s.Center))
 			record.Material = s.Material
-			return true, record
+			return true, &record
 		}
 	}
-	return false, record
+	return false, nil
 }
 
-func RandomPointInUnitSphere() Point {
-	var p Point
+func RandomPointInUnitSphere() *Point {
+	var p *Point
 	for {
 		x, y, z := 2*rand.Float64()-1, 2*rand.Float64()-1, 2*rand.Float64()-1
 		p = NewPoint(x, y, z)
