@@ -1,11 +1,11 @@
 package models
 
 type Ray struct {
-	Origin    *Point
-	Direction *Vector3D
+	Origin    Vector
+	Direction Vector
 }
 
-func (r *Ray) PointAtParameter(t float64) *Point {
+func (r *Ray) PointAtParameter(t float64) Vector {
 	dirVec := MultiplyScalar(r.Direction, t)
-	return NewPointByVector(AddVectors(r.Origin, dirVec))
+	return AddVectors(r.Origin, dirVec)
 }

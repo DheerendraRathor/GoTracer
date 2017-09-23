@@ -2,58 +2,29 @@ package models
 
 import "math"
 
-type Pixel struct {
-	*Vector3D
+func (v Vector) R() float64 {
+	return v[0]
 }
 
-func (p *Pixel) R() float64 {
-	return p.x
+func (v Vector) G() float64 {
+	return v[1]
 }
 
-func (p *Pixel) G() float64 {
-	return p.y
+func (v Vector) B() float64 {
+	return v[2]
 }
 
-func (p *Pixel) B() float64 {
-	return p.z
+func (v Vector) Gamma2() {
+	v[0] = math.Sqrt(v[0])
+	v[1] = math.Sqrt(v[1])
+	v[2] = math.Sqrt(v[2])
 }
 
-func (p *Pixel) Gamma2() {
-	p.x = math.Sqrt(p.x)
-	p.y = math.Sqrt(p.y)
-	p.z = math.Sqrt(p.z)
-}
-
-func (p *Pixel) UInt8Pixel() Uint8Pixel {
-	return Uint8Pixel{
-		uint8(255.99 * p.x),
-		uint8(255.99 * p.y),
-		uint8(255.99 * p.z),
+func (v Vector) ToUint8() []uint8 {
+	result := MultiplyScalar(v, 255.99)
+	return []uint8{
+		uint8(result[0]),
+		uint8(result[1]),
+		uint8(result[2]),
 	}
-}
-
-func NewPixel(r, g, b float64) Pixel {
-	return Pixel{
-		&Vector3D{
-			r,
-			g,
-			b,
-		},
-	}
-}
-
-func NewPixelFromVector(v Vector) *Pixel {
-	return &Pixel{
-		&Vector3D{
-			v.X(),
-			v.Y(),
-			v.Z(),
-		},
-	}
-}
-
-type Uint8Pixel struct {
-	R uint8
-	G uint8
-	B uint8
 }
