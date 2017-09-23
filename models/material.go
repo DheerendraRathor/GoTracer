@@ -6,18 +6,18 @@ import (
 )
 
 type Material interface {
-	Scatter(*Ray, *HitRecord) (bool, *Vector3D, *Ray)
+	Scatter(*Ray, *HitRecord) (bool, Vector, *Ray)
 }
 
 type BaseMaterial struct {
-	Albedo *Vector3D
+	Albedo Vector
 }
 
 type Lambertian struct {
 	*BaseMaterial
 }
 
-func NewLambertian(albedo *Vector3D) *Lambertian {
+func NewLambertian(albedo Vector) *Lambertian {
 	return &Lambertian{
 		&BaseMaterial{
 			Albedo: albedo,
@@ -25,7 +25,7 @@ func NewLambertian(albedo *Vector3D) *Lambertian {
 	}
 }
 
-func (l *Lambertian) Scatter(ray *Ray, hitRecord *HitRecord) (bool, *Vector3D, *Ray) {
+func (l *Lambertian) Scatter(ray *Ray, hitRecord *HitRecord) (bool, Vector, *Ray) {
 	pN := AddVectors(hitRecord.P, hitRecord.N)
 	targetPoint := AddVectors(pN, RandomPointInUnitSphere())
 	scattered := Ray{
@@ -40,7 +40,7 @@ type Metal struct {
 	fuzz float64
 }
 
-func NewMetal(albedo *Vector3D, fuzz float64) *Metal {
+func NewMetal(albedo Vector, fuzz float64) *Metal {
 	return &Metal{
 		BaseMaterial: &BaseMaterial{
 			albedo,
@@ -49,7 +49,7 @@ func NewMetal(albedo *Vector3D, fuzz float64) *Metal {
 	}
 }
 
-func (m Metal) Scatter(ray *Ray, hitRecord *HitRecord) (bool, *Vector3D, *Ray) {
+func (m Metal) Scatter(ray *Ray, hitRecord *HitRecord) (bool, Vector, *Ray) {
 	reflected := UnitVector(Reflect(ray.Direction, hitRecord.N))
 	scattered := Ray{
 		hitRecord.P,
@@ -64,9 +64,9 @@ type Dielectric struct {
 	RefIndex float64
 }
 
-func (d *Dielectric) Scatter(ray *Ray, hitRecord *HitRecord) (bool, *Vector3D, *Ray) {
+func (d *Dielectric) Scatter(ray *Ray, hitRecord *HitRecord) (bool, Vector, *Ray) {
 	reflected := Reflect(ray.Direction, hitRecord.N)
-	var outwardNormal *Vector3D
+	var outwardNormal Vector
 	var ni, nt float64 = 1, 1
 	var cosine, reflectionProb float64
 	if VectorDotProduct(ray.Direction, hitRecord.N) > 0 {
@@ -97,7 +97,7 @@ func (d *Dielectric) Scatter(ray *Ray, hitRecord *HitRecord) (bool, *Vector3D, *
 	return true, d.Albedo, scattered
 }
 
-func NewDielectric(albedo *Vector3D, r float64) *Dielectric {
+func NewDielectric(albedo Vector, r float64) *Dielectric {
 	return &Dielectric{
 		BaseMaterial: &BaseMaterial{
 			Albedo: albedo,

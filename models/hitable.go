@@ -6,8 +6,8 @@ type Hitable interface {
 
 type HitRecord struct {
 	T        float64
-	P        *Point
-	N        *Vector3D
+	P        Vector
+	N        Vector
 	Material Material
 }
 

@@ -2,7 +2,6 @@ package models
 
 import "fmt"
 
-type VectorInput [3]float64
 type ObjectType int
 
 const (
@@ -24,9 +23,9 @@ func (i *ImageInput) GetPatch() (int, int, int, int) {
 }
 
 type CameraInput struct {
-	LookFrom    VectorInput
-	LookAt      VectorInput
-	UpVector    VectorInput
+	LookFrom    Vector
+	LookAt      Vector
+	UpVector    Vector
 	FieldOfView float64
 	AspectRatio float64
 	Focus       float64
@@ -35,13 +34,13 @@ type CameraInput struct {
 
 type SurfaceInput struct {
 	Type     string
-	Albedo   VectorInput
+	Albedo   []float64
 	Fuzz     float64
 	RefIndex float64
 }
 
 type SphereInput struct {
-	Center  VectorInput
+	Center  Vector
 	Radius  float64
 	Surface SurfaceInput
 }
@@ -64,10 +63,8 @@ type World struct {
 }
 
 func (w World) GetCamera() *Camera {
-	lookFrom := NewPointByArray(w.Camera.LookFrom)
-	lookAt := NewPointByArray(w.Camera.LookAt)
-	vup := NewVector3DFromArray(w.Camera.UpVector)
-	return NewCamera(lookFrom, lookAt, vup, w.Camera.FieldOfView, w.Camera.AspectRatio, w.Camera.Aperture, w.Camera.Focus)
+	return NewCamera(w.Camera.LookFrom, w.Camera.LookAt, w.Camera.UpVector, w.Camera.FieldOfView,
+		w.Camera.AspectRatio, w.Camera.Aperture, w.Camera.Focus)
 }
 
 func (w World) GetHitableList() *HitableList {
@@ -83,7 +80,7 @@ func (w World) GetHitableList() *HitableList {
 func (s SphereInput) getSphere() *Sphere {
 	return &Sphere{
 		Radius:   s.Radius,
-		Center:   NewPointByArray(s.Center),
+		Center:   s.Center,
 		Material: s.Surface.getMaterial(),
 	}
 }
@@ -94,11 +91,11 @@ func (s *SurfaceInput) getMaterial() Material {
 
 	switch s.Type {
 	case LambertianMaterial:
-		material = NewLambertian(NewVector3DFromArray(s.Albedo))
+		material = NewLambertian(s.Albedo)
 	case MetalMaterial:
-		material = NewMetal(NewVector3DFromArray(s.Albedo), s.Fuzz)
+		material = NewMetal(s.Albedo, s.Fuzz)
 	case DielectricMaterial:
-		material = NewDielectric(NewVector3DFromArray(s.Albedo), s.RefIndex)
+		material = NewDielectric(s.Albedo, s.RefIndex)
 	default:
 		panic(fmt.Sprintf("Got invalid surface type: %s", s.Type))
 	}

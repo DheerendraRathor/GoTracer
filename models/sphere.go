@@ -6,14 +6,14 @@ import (
 )
 
 type Sphere struct {
-	Center   *Point
+	Center   Vector
 	Radius   float64
 	Material Material
 }
 
 func NewSphere(x, y, z, r float64, material Material) *Sphere {
 	return &Sphere{
-		NewPoint(x, y, z),
+		Vector{x, y, z},
 		r,
 		material,
 	}
@@ -51,11 +51,13 @@ func (s *Sphere) Hit(r *Ray, tmin, tmax float64) (bool, *HitRecord) {
 	return false, nil
 }
 
-func RandomPointInUnitSphere() *Point {
-	var p *Point
+func RandomPointInUnitSphere() Vector {
+	var p, offset Vector
+	offset = []float64{1, 1, 1}
 	for {
-		x, y, z := 2*rand.Float64()-1, 2*rand.Float64()-1, 2*rand.Float64()-1
-		p = NewPoint(x, y, z)
+		p = []float64{rand.Float64(), rand.Float64(), rand.Float64()}
+		p.MultiplyScalar(2)
+		p.Subtract(offset)
 		if VectorDotProduct(p, p) < 1.0 {
 			break
 		}

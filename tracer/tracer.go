@@ -65,7 +65,7 @@ func GoTrace(env *models.World, progress chan<- bool) {
 }
 
 func processPixel(i, j, imageWidth, imageHeight, sample int, camera *models.Camera, world *models.HitableList, pngImage *image.RGBA) {
-	colorVector := models.NewVector3D(0, 0, 0)
+	colorVector := models.Vector{0, 0, 0}
 	for s := 0; s < sample; s++ {
 		randFloatu, randFloatv := rand.Float64(), rand.Float64()
 		u, v := (float64(j)+randFloatu)/float64(imageWidth), (float64(i)+randFloatv)/float64(imageHeight)
@@ -73,35 +73,31 @@ func processPixel(i, j, imageWidth, imageHeight, sample int, camera *models.Came
 		colorVector = models.AddVectors(colorVector, getColor(ray, world, 0))
 	}
 
-	pixel := models.NewPixelFromVector(
-		models.DivideScalar(colorVector, float64(sample)),
-	)
+	pixel := models.DivideScalar(colorVector, float64(sample))
 	pixel.Gamma2()
-	uint8Pixel := pixel.UInt8Pixel()
-	rgba := color.RGBA{uint8Pixel.R, uint8Pixel.G, uint8Pixel.B, 255}
+	uint8Pixel := pixel.ToUint8()
+	rgba := color.RGBA{uint8Pixel[0], uint8Pixel[1], uint8Pixel[2], 255}
 	pngImage.Set(j, imageHeight-i-1, rgba)
 }
 
-func getColor(r *models.Ray, world *models.HitableList, renderDepth int) *models.Pixel {
+func getColor(r *models.Ray, world *models.HitableList, renderDepth int) models.Vector {
 
 	willHit, hitRecord := world.Hit(r, 0.0, math.MaxFloat64)
 	if willHit {
 		shouldScatter, attenuation, ray := hitRecord.Material.Scatter(r, hitRecord)
 		if renderDepth < MaxRenderDepth && shouldScatter {
 			colorVector := models.MultiplyVectors(attenuation, getColor(ray, world, renderDepth+1))
-			return models.NewPixelFromVector(colorVector)
+			return colorVector
 		}
 	}
 
 	unitDir := models.UnitVector(r.Direction)
 	t := 0.5 * (unitDir.Y() + 1.0)
-	var startValue, endValue, startBlend, endBlend *models.Vector3D
-	startValue = models.NewVector3D(1.0, 1.0, 1.0)
-	endValue = models.NewVector3D(0.5, 0.7, 1.0)
+	var startValue, endValue, startBlend, endBlend models.Vector
+	startValue = models.Vector{1.0, 1.0, 1.0}
+	endValue = models.Vector{0.5, 0.7, 1.0}
 
 	startBlend = models.MultiplyScalar(startValue, 1-t)
 	endBlend = models.MultiplyScalar(endValue, t)
-	return &models.Pixel{
-		Vector3D: models.AddVectors(startBlend, endBlend),
-	}
+	return models.AddVectors(startBlend, endBlend)
 }
