@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"github.com/DheerendraRathor/GoTracer/models"
 	"github.com/DheerendraRathor/GoTracer/tracer"
+	"github.com/DheerendraRathor/GoTracer/utils"
 	"gopkg.in/cheggaaa/pb.v1"
+	"image/png"
 	"io/ioutil"
 	"sync"
 )
@@ -51,7 +53,12 @@ func main() {
 		}()
 	}
 
-	goTracer.GoTrace(&env, progress)
+	pngImage := goTracer.GoTrace(&env, progress)
+
+	pngFile := utils.CreateNestedFile(env.Image.OutputFile)
+	defer pngFile.Close()
+
+	png.Encode(pngFile, pngImage)
 
 	if env.Settings.ShowProgress {
 		pbWg.Wait()

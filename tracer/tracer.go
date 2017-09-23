@@ -2,10 +2,8 @@ package goTracer
 
 import (
 	"github.com/DheerendraRathor/GoTracer/models"
-	"github.com/DheerendraRathor/GoTracer/utils"
 	"image"
 	"image/color"
-	"image/png"
 	"math"
 	"math/rand"
 	"runtime"
@@ -14,7 +12,7 @@ import (
 
 var MaxRenderDepth int = 10
 
-func GoTrace(env *models.World, progress chan<- bool) {
+func GoTrace(env *models.World, progress chan<- bool) *image.RGBA {
 	if env.Settings.RenderDepth > 0 {
 		MaxRenderDepth = env.Settings.RenderDepth
 	}
@@ -27,8 +25,6 @@ func GoTrace(env *models.World, progress chan<- bool) {
 	var renderWg sync.WaitGroup
 
 	pngImage := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
-	pngFile := utils.CreateNestedFile(env.Image.OutputFile)
-	defer pngFile.Close()
 
 	renderRoutines := env.Settings.RenderRoutines
 	if renderRoutines <= 0 {
@@ -61,7 +57,7 @@ func GoTrace(env *models.World, progress chan<- bool) {
 		progress <- true
 	}
 
-	png.Encode(pngFile, pngImage)
+	return pngImage
 }
 
 func processPixel(i, j, imageWidth, imageHeight, sample int, camera *models.Camera, world *models.HitableList, pngImage *image.RGBA) {
