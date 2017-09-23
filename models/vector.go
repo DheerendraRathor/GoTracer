@@ -149,14 +149,6 @@ func MultiplyVectors(v1, v2 Vector) *Vector3D {
 	}
 }
 
-func DivideVectors(v1, v2 Vector) *Vector3D {
-	return &Vector3D{
-		v1.X() / v2.X(),
-		v1.Y() / v2.Y(),
-		v1.Z() / v2.Z(),
-	}
-}
-
 func VectorDotProduct(v1, v2 Vector) float64 {
 	return v1.X()*v2.X() + v1.Y()*v2.Y() + v1.Z()*v2.Z()
 }
