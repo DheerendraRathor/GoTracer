@@ -4,13 +4,16 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"image"
+	"image/color"
+	"image/png"
+	"io/ioutil"
+	"sync"
+
 	"github.com/DheerendraRathor/GoTracer/models"
 	"github.com/DheerendraRathor/GoTracer/tracer"
 	"github.com/DheerendraRathor/GoTracer/utils"
 	"gopkg.in/cheggaaa/pb.v1"
-	"image/png"
-	"io/ioutil"
-	"sync"
 )
 
 var renderSpecFile string
@@ -30,38 +33,48 @@ func main() {
 	var env models.World
 	json.Unmarshal(file, &env)
 
-	progress := make(chan bool, 100)
+	progress := make(chan *models.Pixel, 100)
 	defer close(progress)
 
+	pngImage := image.NewRGBA(image.Rectangle{
+		image.Point{0, 0},
+		image.Point{env.Image.Width, env.Image.Height},
+	})
+
 	var pbWg sync.WaitGroup
+	var progressBar *pb.ProgressBar
 
-	if env.Settings.ShowProgress {
-		// Progress Bar
-		pbWg.Add(1)
-		go func() {
-			defer pbWg.Done()
+	pbWg.Add(1)
+	go func() {
+		defer pbWg.Done()
+		if env.Settings.ShowProgress {
 			total := env.Image.Width * env.Image.Height
-			bar := pb.StartNew(total)
-			bar.ShowFinalTime = true
-			bar.ShowTimeLeft = false
-			for value := range progress {
-				if value {
-					break
-				}
-				bar.Increment()
+			progressBar = pb.StartNew(total)
+			progressBar.ShowFinalTime = true
+			progressBar.ShowTimeLeft = false
+		}
+		for pixel := range progress {
+			if pixel == nil {
+				break
 			}
-		}()
-	}
 
-	pngImage := goTracer.GoTrace(&env, progress)
+			rgbaColor := color.RGBA{pixel.Color[0], pixel.Color[1], pixel.Color[2], 255}
+			pngImage.Set(pixel.I, pixel.J, rgbaColor)
+
+			if env.Settings.ShowProgress {
+				progressBar.Increment()
+			}
+		}
+	}()
+
+	closeChan := make(chan bool)
+	goTracer.GoTrace(&env, progress, closeChan)
 
 	pngFile := utils.CreateNestedFile(env.Image.OutputFile)
 	defer pngFile.Close()
 
-	png.Encode(pngFile, pngImage)
+	pbWg.Wait()
 
-	if env.Settings.ShowProgress {
-		pbWg.Wait()
-	}
+	png.Encode(pngFile, pngImage)
 
 }

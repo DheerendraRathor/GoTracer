@@ -15,12 +15,12 @@ type Camera struct {
 func (c *Camera) RayAt(u, v float64) *Ray {
 
 	rd := MultiplyScalar(RandomPointInUnitDisk(), c.LensRadius)
-	offset := AddVectors(MultiplyScalar(c.U, rd.X()), MultiplyScalar(c.V, rd.Y()))
+	offset := AddVectors(MultiplyScalar(c.U, rd[0]), MultiplyScalar(c.V, rd[1]))
 	origin := AddVectors(c.Origin, offset)
 
-	horizontalDir := AddVectors(c.LowerLeftCorner, MultiplyScalar(c.Horizontal, u))
-	compositeDir := AddVectors(horizontalDir, MultiplyScalar(c.Vertical, v))
-	compositeDir = SubtractVectors(compositeDir, origin)
+	compositeDir := AddVectors(c.LowerLeftCorner, MultiplyScalar(c.Horizontal, u)).
+		Add(MultiplyScalar(c.Vertical, v)).
+		Subtract(origin)
 	return &Ray{
 		origin,
 		compositeDir,
@@ -37,11 +37,11 @@ func NewCamera(lookFrom, lookAt, vup Vector, vfov, aspect, aperture, focus float
 	u := UnitVector(VectorCrossProduct(vup, w))
 	v := VectorCrossProduct(w, u)
 
-	llc := SubtractVectors(lookFrom, MultiplyScalar(u, half_width*focus))
-	llc = SubtractVectors(llc, MultiplyScalar(v, half_height*focus))
-	llc = SubtractVectors(llc, MultiplyScalar(w, focus))
+	llc := SubtractVectors(lookFrom, MultiplyScalar(u, half_width*focus)).
+		Subtract(MultiplyScalar(v, half_height*focus)).
+		Subtract(MultiplyScalar(w, focus))
 
-	return &Camera{
+	camera := &Camera{
 		LowerLeftCorner: llc,
 		Horizontal:      MultiplyScalar(u, 2*half_width*focus),
 		Vertical:        MultiplyScalar(v, 2*half_height*focus),
@@ -51,15 +51,16 @@ func NewCamera(lookFrom, lookAt, vup Vector, vfov, aspect, aperture, focus float
 		V:               v,
 		W:               w,
 	}
+
+	return camera
 }
 
 func RandomPointInUnitDisk() Vector {
-	var p, origin Vector
+	var p Vector
+	origin := []float64{1, 1, 0}
 	for {
 		p = []float64{rand.Float64(), rand.Float64(), 0}
-		origin = []float64{1, 1, 0}
-		p.MultiplyScalar(2)
-		p.Subtract(origin)
+		p.MultiplyScalar(2).Subtract(origin)
 
 		if VectorDotProduct(p, p) < 1.0 {
 			break

@@ -1,6 +1,8 @@
 package models
 
-import "math"
+import (
+	"math"
+)
 
 type Vector []float64
 
@@ -25,21 +27,14 @@ func Refract(v, n Vector, ni, nt float64) (bool, Vector) {
 	uv := UnitVector(v)
 	cosθ := VectorDotProduct(uv, n)
 	snellRatio := ni / nt
-	discriminator := 1 - snellRatio*(1-cosθ*cosθ)
+	discriminator := 1 - snellRatio*snellRatio*(1-cosθ*cosθ)
 	if discriminator > 0 {
-		v1 := MultiplyScalar(SubtractVectors(v, MultiplyScalar(n, cosθ)), snellRatio)
-		v2 := MultiplyScalar(n, math.Sqrt(discriminator))
-		return true, SubtractVectors(v1, v2)
+		//(uv - n*cosθ)*snellRatio - n*sqrt(disc)
+		refracted := uv.Subtract(MultiplyScalar(n, cosθ)).MultiplyScalar(snellRatio).
+			Subtract(MultiplyScalar(n, math.Sqrt(discriminator)))
+		return true, refracted
 	}
 	return false, nil
-}
-
-func NewVector(x, y, z float64) Vector {
-	return Vector{x, y, z}
-}
-
-func NewVectorFromSlice(input []float64) Vector {
-	return Vector{input[0], input[1], input[2]}
 }
 
 func Negate(v Vector) Vector {
@@ -58,35 +53,40 @@ func (v Vector) Length() float64 {
 	return math.Sqrt(v.SquaredLength())
 }
 
-func (v Vector) Add(v1 Vector) {
+func (v Vector) Add(v1 Vector) Vector {
 	v[0] += v1[0]
 	v[1] += v1[1]
 	v[2] += v1[2]
+	return v
 }
 
-func (v Vector) Subtract(v1 Vector) {
+func (v Vector) Subtract(v1 Vector) Vector {
 	v[0] -= v1[0]
 	v[1] -= v1[1]
 	v[2] -= v1[2]
+	return v
 }
 
-func (v Vector) MultiplyScalar(val float64) {
+func (v Vector) MultiplyScalar(val float64) Vector {
 	v[0] *= val
 	v[1] *= val
 	v[2] *= val
+	return v
 }
 
-func (v Vector) DivideByScalar(val float64) {
+func (v Vector) DivideByScalar(val float64) Vector {
 	v[0] /= val
 	v[1] /= val
 	v[2] /= val
+	return v
 }
 
-func (v Vector) MakeUnitVector() {
+func (v Vector) MakeUnitVector() Vector {
 	length := v.Length()
 	v[0] /= length
 	v[1] /= length
 	v[2] /= length
+	return v
 }
 
 func UnitVector(v Vector) Vector {
@@ -106,46 +106,38 @@ func MultiplyScalar(v Vector, t float64) Vector {
 	}
 }
 
-func DivideScalar(v Vector, t float64) Vector {
-	return Vector{
-		v.X() / t,
-		v.Y() / t,
-		v.Z() / t,
-	}
-}
-
 func AddVectors(v1, v2 Vector) Vector {
 	return Vector{
-		v1.X() + v2.X(),
-		v1.Y() + v2.Y(),
-		v1.Z() + v2.Z(),
+		v1[0] + v2[0],
+		v1[1] + v2[1],
+		v1[2] + v2[2],
 	}
 }
 
 func SubtractVectors(v1, v2 Vector) Vector {
 	return Vector{
-		v1.X() - v2.X(),
-		v1.Y() - v2.Y(),
-		v1.Z() - v2.Z(),
+		v1[0] - v2[0],
+		v1[1] - v2[1],
+		v1[2] - v2[2],
 	}
 }
 
 func MultiplyVectors(v1, v2 Vector) Vector {
 	return Vector{
-		v1.X() * v2.X(),
-		v1.Y() * v2.Y(),
-		v1.Z() * v2.Z(),
+		v1[0] * v2[0],
+		v1[1] * v2[1],
+		v1[2] * v2[2],
 	}
 }
 
 func VectorDotProduct(v1, v2 Vector) float64 {
-	return v1.X()*v2.X() + v1.Y()*v2.Y() + v1.Z()*v2.Z()
+	return v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2]
 }
 
 func VectorCrossProduct(v1, v2 Vector) Vector {
 	return Vector{
 		v1[1]*v2[2] - v1[2]*v2[1],
-		-v1.X()*v2.Z() - v1.X()*v2.X(),
-		v1.X()*v2.Y() - v1.Y()*v2.X(),
+		v1[2]*v2[0] - v1[0]*v2[2],
+		v1[0]*v2[1] - v1[1]*v2[0],
 	}
 }

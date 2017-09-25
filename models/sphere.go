@@ -56,8 +56,7 @@ func RandomPointInUnitSphere() Vector {
 	offset = []float64{1, 1, 1}
 	for {
 		p = []float64{rand.Float64(), rand.Float64(), rand.Float64()}
-		p.MultiplyScalar(2)
-		p.Subtract(offset)
+		p.MultiplyScalar(2).Subtract(offset)
 		if VectorDotProduct(p, p) < 1.0 {
 			break
 		}

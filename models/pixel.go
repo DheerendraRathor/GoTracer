@@ -20,11 +20,20 @@ func (v Vector) Gamma2() {
 	v[2] = math.Sqrt(v[2])
 }
 
-func (v Vector) ToUint8() []uint8 {
+type Pixel struct {
+	Color []uint8
+	I, J  int
+}
+
+func (v Vector) ToUint8(i, j int) *Pixel {
 	result := MultiplyScalar(v, 255.99)
-	return []uint8{
-		uint8(result[0]),
-		uint8(result[1]),
-		uint8(result[2]),
+	return &Pixel{
+		[]uint8{
+			uint8(result[0]),
+			uint8(result[1]),
+			uint8(result[2]),
+		},
+		i,
+		j,
 	}
 }

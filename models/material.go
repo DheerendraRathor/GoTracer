@@ -1,8 +1,9 @@
 package models
 
 import (
-	"github.com/DheerendraRathor/GoTracer/utils"
 	"math/rand"
+
+	"github.com/DheerendraRathor/GoTracer/utils"
 )
 
 type Material interface {
@@ -50,12 +51,12 @@ func NewMetal(albedo Vector, fuzz float64) *Metal {
 }
 
 func (m Metal) Scatter(ray *Ray, hitRecord *HitRecord) (bool, Vector, *Ray) {
-	reflected := UnitVector(Reflect(ray.Direction, hitRecord.N))
+	reflected := Reflect(UnitVector(ray.Direction), hitRecord.N)
 	scattered := Ray{
 		hitRecord.P,
-		AddVectors(reflected, MultiplyScalar(RandomPointInUnitSphere(), m.fuzz)),
+		reflected.Add(RandomPointInUnitSphere().MultiplyScalar(m.fuzz)),
 	}
-	shouldScatter := VectorDotProduct(reflected, hitRecord.N) > 0
+	shouldScatter := VectorDotProduct(scattered.Direction, hitRecord.N) > 0
 	return shouldScatter, m.Albedo, &scattered
 }
 
@@ -67,31 +68,31 @@ type Dielectric struct {
 func (d *Dielectric) Scatter(ray *Ray, hitRecord *HitRecord) (bool, Vector, *Ray) {
 	reflected := Reflect(ray.Direction, hitRecord.N)
 	var outwardNormal Vector
-	var ni, nt float64 = 1, 1
-	var cosine, reflectionProb float64
+	var ni, nt, cosine, reflectionProb float64
 	if VectorDotProduct(ray.Direction, hitRecord.N) > 0 {
 		outwardNormal = Negate(hitRecord.N)
 		ni = d.RefIndex
 		nt = 1
-		cosine = d.RefIndex * VectorDotProduct(ray.Direction, hitRecord.N) * ray.Direction.Length()
+		cosine = d.RefIndex * VectorDotProduct(ray.Direction, hitRecord.N) / ray.Direction.Length()
 	} else {
 		outwardNormal = hitRecord.N
 		ni = 1
 		nt = d.RefIndex
-		cosine = -VectorDotProduct(ray.Direction, hitRecord.N) * ray.Direction.Length()
+		cosine = -VectorDotProduct(ray.Direction, hitRecord.N) / ray.Direction.Length()
 	}
 
 	var scattered *Ray
 	willRefract, refractedVec := Refract(ray.Direction, outwardNormal, ni, nt)
 	if willRefract {
-		reflectionProb = utils.Schlick(cosine, 1, d.RefIndex)
-		scattered = &Ray{hitRecord.P, refractedVec}
+		reflectionProb = utils.Schlick(cosine, ni, nt)
 	} else {
 		reflectionProb = 1.0
 	}
 
 	if rand.Float64() < reflectionProb {
 		scattered = &Ray{hitRecord.P, reflected}
+	} else {
+		scattered = &Ray{hitRecord.P, refractedVec}
 	}
 
 	return true, d.Albedo, scattered

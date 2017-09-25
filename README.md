@@ -63,8 +63,7 @@ This program takes a JSON specification of environment to be traced. Currently o
             <td>boolean</td>
             <td>Show a progress bar while Image is being rendered</td>
         </tr>
-        <tr>
-            <td>RenderRoutines</td>
+        <td>RenderRoutines</td>
             <td>integer</td>
             <td>Number of goroutines for ray tracing. If value is less than zero then <code>runtime.NumCPU()</code> is taken</td>
         </tr>
@@ -186,21 +185,23 @@ This program takes a JSON specification of environment to be traced. Currently o
 
 ## Usages
 ```bash
-go get github.com/DheerendraRathor/GoTracer.git
+go get github.com/DheerendraRathor/GoTracer
 
 goTracer --spec=/path/to/spec.json
 ```
 
 ### As library
+
 ```go
 package main
 
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+
 	"github.com/DheerendraRathor/GoTracer/models"
 	"github.com/DheerendraRathor/GoTracer/tracer"
-	"io/ioutil"
 )
 
 func main() {
@@ -220,10 +221,27 @@ func main() {
 		It is responsibility of caller to create sufficiently large buffered channel and read it responsibly if env.Settings.ShowProgress is true.
 		Otherwise program might hang.
 	*/
-	progress := make(chan bool, 100)
+	progress := make(chan *models.Pixel, 100)
+	closeChan := make(chan bool)
 	defer close(progress)
 
-	goTracer.GoTrace(&env, progress)
+	go goTracer.GoTrace(&env, progress, closeChan)
+
+	go func() {
+		for pixel := range progress {
+			if pixel == nil {
+				// Rendering complete
+				return
+			}
+			// Do processing with pixel here.
+			// Want to generate JPEG? GIF? Real time rendering on UI? Show weird looking progress bar? Your call. You've the pixels now
+		}
+	}()
+
+	// To stop rendering in middle, just pass a value to closeChan.
+	// GoTracer does a non-blocking check on closeChan before rendering a pixel. If channel has a value, it will stop rendering and send nil to
+	// progress channel.
+	// Caveat: Existing goroutines for other pixel will continue to run.
 
 }
 ```
