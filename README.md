@@ -1,11 +1,107 @@
 GoTracer
 ========
 
-A Go implementation of Ray Tracing in One Weekend.  
+A Go implementation of Ray Tracing in One Weekend by Peter Shirley. 
 
 ![Five Spheres](./examples/renderedFiveSpheres.png)
 
-Provides a library and executable to trace a bunch of spheres with Matte, Metal and transparent surfaces.
+## Features:
+- Provides a library and executable to trace a bunch of spheres with Matte, Metal and transparent surfaces.
+- Provides a framework to ray trace a bunch or spheres on a distributed systems controlled by master/agent configuration
+
+## Usages
+
+Prepare rendering spec as per [Tracing Specification](#tracing-specification)
+
+### Basic
+```bash
+go get github.com/DheerendraRathor/GoTracer
+
+goTracer --spec=/path/to/spec.json
+```
+
+### On distributed Systems
+1. Install and run ray tracing agent on all machines  
+```
+go get github.com/DheerendraRathor/GoTracer/net/agent
+
+# Provide an addr where agent will listen. Address (including port) must be visible to master
+agent --addr=0.0.0.0:1233
+```
+
+2. Prepare `agents.json` file with list of all agents
+```json
+[
+  "localhost:9190",
+  "localhost:9191",
+  "localhost:9192"
+]
+```
+   
+3. Install and run master 
+```bash
+go get github.com/DheerendraRathor/GoTracer/net/master
+
+master --spec=/path/to/spec.json --agents=/path/to/agents.json
+``` 
+
+4. Sit back and relax while image is being rendered :)
+
+### As library
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+
+	"github.com/DheerendraRathor/GoTracer/models"
+	"github.com/DheerendraRathor/GoTracer/tracer"
+)
+
+func main() {
+
+	file, e := ioutil.ReadFile("mySpecFile.json")
+	if e != nil {
+		panic(fmt.Sprintf("File error: %v\n", e))
+	}
+
+	var env models.World
+	json.Unmarshal(file, &env)
+
+	/*
+		This channel is used to track progress of ray tracing. If env.Settings.ShowProgress is set to true.
+		On each pixel traced a `false` value is pushed to progress channel. And once all pixel are processed a `true` value is pushed into channel.
+
+		It is responsibility of caller to create sufficiently large buffered channel and read it responsibly if env.Settings.ShowProgress is true.
+		Otherwise program might hang.
+	*/
+	progress := make(chan *models.Pixel, 100)
+	closeChan := make(chan bool)
+	defer close(progress)
+
+	go goTracer.GoTrace(&env, progress, closeChan)
+
+	go func() {
+		for pixel := range progress {
+			if pixel == nil {
+				// Rendering complete
+				return
+			}
+			// Do processing with pixel here.
+			// Want to generate JPEG? GIF? Real time rendering on UI? Show weird looking progress bar? Your call. You've the pixels now
+		}
+	}()
+
+	// To stop rendering in middle, just pass a value to closeChan.
+	// GoTracer does a non-blocking check on closeChan before rendering a pixel. If channel has a value, it will stop rendering and send nil to
+	// progress channel.
+	// Caveat: Existing goroutines for other pixel will continue to run.
+
+}
+```
 
 
 ## Tracing Specification
@@ -182,66 +278,3 @@ This program takes a JSON specification of environment to be traced. Currently o
 </table>
 
 **Note**: list[x][n] => list of elements of type x with size n
-
-## Usages
-```bash
-go get github.com/DheerendraRathor/GoTracer
-
-goTracer --spec=/path/to/spec.json
-```
-
-### As library
-
-```go
-package main
-
-import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-
-	"github.com/DheerendraRathor/GoTracer/models"
-	"github.com/DheerendraRathor/GoTracer/tracer"
-)
-
-func main() {
-
-	file, e := ioutil.ReadFile("mySpecFile.json")
-	if e != nil {
-		panic(fmt.Sprintf("File error: %v\n", e))
-	}
-
-	var env models.World
-	json.Unmarshal(file, &env)
-
-	/*
-		This channel is used to track progress of ray tracing. If env.Settings.ShowProgress is set to true.
-		On each pixel traced a `false` value is pushed to progress channel. And once all pixel are processed a `true` value is pushed into channel.
-
-		It is responsibility of caller to create sufficiently large buffered channel and read it responsibly if env.Settings.ShowProgress is true.
-		Otherwise program might hang.
-	*/
-	progress := make(chan *models.Pixel, 100)
-	closeChan := make(chan bool)
-	defer close(progress)
-
-	go goTracer.GoTrace(&env, progress, closeChan)
-
-	go func() {
-		for pixel := range progress {
-			if pixel == nil {
-				// Rendering complete
-				return
-			}
-			// Do processing with pixel here.
-			// Want to generate JPEG? GIF? Real time rendering on UI? Show weird looking progress bar? Your call. You've the pixels now
-		}
-	}()
-
-	// To stop rendering in middle, just pass a value to closeChan.
-	// GoTracer does a non-blocking check on closeChan before rendering a pixel. If channel has a value, it will stop rendering and send nil to
-	// progress channel.
-	// Caveat: Existing goroutines for other pixel will continue to run.
-
-}
-```
