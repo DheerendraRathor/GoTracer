@@ -1,0 +1,40 @@
+# Build customization
+builds:
+  - main: main.go
+    binary: GoTracer
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+  - main: net/agent/agent.go
+    binary: GoTracerAgent
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+  - main: net/master/master.go
+    binary: GoTracerMaster
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+
+# Archive customization
+archive:
+  format: tar.gz
+  replacements:
+    darwin: macOS
+  format_overrides:
+    - goos: windows
+      format: zip
+  files:
+    - README.md
+    - sample_world.json
+    - examples/fiveSpheres.json
+    - net/master/agents.json

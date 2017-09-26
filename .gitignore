@@ -3,3 +3,4 @@
 *.ppm
 *.png
 GoTracer
+dist/
