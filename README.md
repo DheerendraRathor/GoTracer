@@ -3,7 +3,7 @@ GoTracer
 
 A Go implementation of Ray Tracing in One Weekend by Peter Shirley. 
 
-![Five Spheres](./examples/renderedFiveSpheres.png)
+![Five Spheres](./examples/renderedFinaleScene.png)
 
 ## Features:
 - Provides a library and executable to trace a bunch of spheres with Matte, Metal and transparent surfaces.
