@@ -1,0 +1,36 @@
+{
+  "Settings": {
+    "ShowProgress": true,
+    "RenderRoutines": -1,
+    "RenderDepth": 10
+  },
+  "Image": {
+    "OutputFile": "./out/renderedImage.png",
+    "Width": 400,
+    "Height": 200,
+    "Samples": 10,
+    "Patch": [0, 200, 0, 400]
+  },
+  "Camera": {
+    "LookFrom": [0, 0, 3],
+    "LookAt": [0, 0, -1],
+    "UpVector": [0, 1, 0],
+    "FieldOfView": 60,
+    "AspectRatio": 2,
+    "Focus": 2.69,
+    "Aperture": 0.04
+  },
+  "Objects": {
+    "Spheres": [
+      {
+        "Center": [0, 0, 0],
+        "Radius": 1.5,
+        "Surface": {
+          "Type": "Kaboom",
+          "Albedo": [1, 1, 1],
+          "Fuzz": 0.1
+        }
+      }
+    ]
+  }
+}

@@ -8,6 +8,7 @@ const (
 	LambertianMaterial = "Lambertian"
 	MetalMaterial      = "Metal"
 	DielectricMaterial = "Dielectric"
+	KaboomMaterial = "Kaboom"
 )
 
 type ImageInput struct {
@@ -96,6 +97,8 @@ func (s *SurfaceInput) getMaterial() Material {
 		material = NewMetal(s.Albedo, s.Fuzz)
 	case DielectricMaterial:
 		material = NewDielectric(s.Albedo, s.RefIndex)
+	case KaboomMaterial:
+		material = NewKaboom(s.Albedo)
 	default:
 		panic(fmt.Sprintf("Got invalid surface type: %s", s.Type))
 	}

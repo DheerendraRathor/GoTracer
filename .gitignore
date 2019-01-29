@@ -4,3 +4,4 @@
 *.png
 GoTracer
 dist/
+vendor/

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"math"
 	"math/rand"
 
 	"github.com/DheerendraRathor/GoTracer/utils"
@@ -105,4 +106,24 @@ func NewDielectric(albedo Vector, r float64) *Dielectric {
 		},
 		RefIndex: r,
 	}
+}
+
+type Kaboom struct {
+	*Lambertian
+}
+
+func NewKaboom(albedo Vector) *Kaboom {
+	return &Kaboom{
+		Lambertian: NewLambertian(albedo),
+	}
+}
+
+func (k *Kaboom) Scatter(ray *Ray, record *HitRecord) (bool, Vector, *Ray) {
+
+	_, color, scatter := k.Lambertian.Scatter(ray, record)
+
+	point := record.P
+	displacement := (math.Sin(16 * point.X())*math.Sin(16 * point.Y())*math.Sin(16 * point.Z()) + 1)/2
+	color = MultiplyScalar(color, displacement)
+	return true, color, scatter
 }
