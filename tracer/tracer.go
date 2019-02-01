@@ -1,98 +1,144 @@
-package goTracer
+package tracer
 
 import (
 	"math"
 	"math/rand"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/DheerendraRathor/GoTracer/models"
 )
 
 var MaxRenderDepth int = 10
 
-func GoTrace(env *models.World, progress chan<- *models.Pixel, closeChan <-chan bool) {
+type TracerOutput struct {
+	Pixels [][]*models.Pixel
+}
+
+func GoTrace(
+	env *models.Specification,
+	sharePixelProgress bool, progress chan<- *models.Pixel,
+	isClosable bool, closeChan <-chan bool,
+) *TracerOutput {
 	if env.Settings.RenderDepth > 0 {
 		MaxRenderDepth = env.Settings.RenderDepth
 	}
 
-	camera := env.GetCamera()
-	world := env.GetHitableList()
+	scene := env.GetScene()
 
 	width, height := env.Image.Width, env.Image.Height
 
-	var renderWg sync.WaitGroup
-
-	renderRoutines := env.Settings.RenderRoutines
-	if renderRoutines <= 0 {
-		renderRoutines = runtime.NumCPU()
+	askedRenderRoutines := env.Settings.RenderRoutines
+	if askedRenderRoutines <= 0 {
+		askedRenderRoutines = runtime.NumCPU()
 	}
-	renderer := make(chan bool, renderRoutines)
-	defer close(renderer)
+
+	renderRoutines := askedRenderRoutines - 2
+	if renderRoutines < 1 {
+		renderRoutines = 1
+	}
+
+	processingGroupData := make([][][2]int, renderRoutines)
+	for i := range processingGroupData {
+		processingGroupData[i] = make([][2]int, 2)
+	}
 
 	imin, imax, jmin, jmax := env.Image.GetPatch()
 
-IMAGE_PROCESSING:
+	var output *TracerOutput
+	if !sharePixelProgress {
+		output = &TracerOutput{
+			Pixels: make([][]*models.Pixel, imax),
+		}
+		for i := range output.Pixels {
+			output.Pixels[i] = make([]*models.Pixel, jmax)
+		}
+	}
+
+	division := 0
+	processingGroup := 0
 	for i := imax - 1; i >= imin; i-- {
 		for j := jmin; j < jmax; j++ {
 
-			// Check if go tracer is asked for close
-			select {
-			case <-closeChan:
-				break IMAGE_PROCESSING
-			default:
-			}
+			processingGroup = division % renderRoutines
+			processingGroupData[processingGroup] = append(processingGroupData[processingGroup], [2]int{i, j})
+			division += 1
 
-			renderer <- true
-			renderWg.Add(1)
+			/*
+				// Check if go tracer is asked for close
+				if isClosable {
+					select {
+					case <-closeChan:
+						break IMAGE_PROCESSING
+					default:
+					}
+				}
+			*/
 
-			go func(i, j, samples int, camera *models.Camera, world *models.HitableList) {
-				defer func() {
-					<-renderer
-					renderWg.Done()
-				}()
-				pixel := processPixel(i, j, width, height, samples, camera, world)
-				progress <- pixel
-			}(i, j, env.Image.Samples, camera, world)
 		}
 	}
+
+	var renderWg sync.WaitGroup
+	renderWg.Add(renderRoutines)
+	for _, _data := range processingGroupData {
+		go func(samples int, scene *models.Scene, data [][2]int) {
+
+			defer func() {
+				renderWg.Done()
+			}()
+
+			rng := rand.New(rand.NewSource(time.Now().Unix() + rand.Int63()))
+
+			for _, point := range data {
+				i, j := point[0], point[1]
+				pixel := processPixel(i, j, width, height, samples, scene, rng)
+				if sharePixelProgress {
+					progress <- pixel
+				} else {
+					output.Pixels[i][j] = pixel
+				}
+			}
+		}(env.Image.Samples, scene, _data)
+	}
+
 	renderWg.Wait()
 
 	progress <- nil
+	return output
 }
 
-func processPixel(i, j, imageWidth, imageHeight, sample int, camera *models.Camera, world *models.HitableList) *models.Pixel {
-	pixel := models.Vector{0, 0, 0}
+func processPixel(i, j, imageWidth, imageHeight, sample int, scene *models.Scene, rng *rand.Rand) *models.Pixel {
+	pixel := models.NewEmptyVector()
 	for s := 0; s < sample; s++ {
-		randFloatu, randFloatv := rand.Float64(), rand.Float64()
+		randFloatu, randFloatv := rng.Float64(), rng.Float64()
 		u, v := (float64(j)+randFloatu)/float64(imageWidth), (float64(i)+randFloatv)/float64(imageHeight)
-		ray := camera.RayAt(u, v)
-		pixel.Add(getColor(ray, world, 0))
+		ray := scene.Camera.RayAt(u, v, rng)
+		pixel.AddVector(getColor(ray, scene, 0, rng))
 	}
 
-	pixel.DivideByScalar(float64(sample)).Gamma2()
-	uint8Pixel := pixel.ToUint8(j, imageHeight-i-1)
+	pixel.Scale(1 / float64(sample)).Gamma2()
+	uint8Pixel := pixel.ToPixel(j, imageHeight-i-1)
 	return uint8Pixel
 }
 
-func getColor(r *models.Ray, world *models.HitableList, renderDepth int) models.Vector {
+func getColor(r *models.Ray, scene *models.Scene, renderDepth int, rng *rand.Rand) *models.Vector {
 
 	// tmin is 0.0001 to avoid self intersection
-	willHit, hitRecord := world.Hit(r, 0.0001, math.MaxFloat64)
-	if willHit {
-		shouldScatter, attenuation, ray := hitRecord.Material.Scatter(r, hitRecord)
+	didHit, hitRecord := scene.HitableList.Hit(r, 0.0001, math.MaxFloat64)
+	if didHit {
+		shouldScatter, attenuation, ray := hitRecord.Material.Scatter(r, hitRecord, rng)
+
+		if hitRecord.Material.IsLight() {
+			return attenuation
+		}
+
 		if renderDepth < MaxRenderDepth && shouldScatter {
-			return models.MultiplyVectors(attenuation, getColor(ray, world, renderDepth+1))
+			return attenuation.MultiplyVector(getColor(ray, scene, renderDepth+1, rng))
 		} else {
-			return []float64{0, 0, 0}
+			return models.NewEmptyVector()
 		}
 	}
 
-	unitDir := models.UnitVector(r.Direction)
-	t := 0.5 * (unitDir.Y() + 1.0)
-	var startBlend, endBlend models.Vector
-	startBlend = models.Vector{1.0, 1.0, 1.0}.MultiplyScalar(1 - t)
-	endBlend = models.Vector{0.5, 0.7, 1.0}.MultiplyScalar(t)
-
-	return startBlend.Add(endBlend)
+	return scene.AmbientLight
 }

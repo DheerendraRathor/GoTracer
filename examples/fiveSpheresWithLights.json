@@ -4,14 +4,13 @@
     "RenderDepth": 10
   },
   "Image": {
-    "OutputFile": "./examples/renderedFiveSpheres.png",
+    "OutputFile": "./examples/renderedFiveSpheresWithLights.png",
     "Height": 400,
     "Width": 800,
     "Samples": 100,
     "Patch": [0, 400, 0, 800]
   },
   "Scene": {
-    "AmbientLight": [0.75, 0.85, 1.0],
     "Camera": {
       "LookFrom": [
         -2,
@@ -37,17 +36,17 @@
       "Spheres": [
         {
           "Center": [
-            0,
-            0,
-            -1
+            -50,
+            50,
+            -50
           ],
-          "Radius": 0.5,
+          "Radius": 15,
           "Surface": {
-            "Type": "Lambertian",
+            "Type": "Light",
             "Albedo": [
-              0.8,
-              0.1,
-              0.1
+              50,
+              50,
+              50
             ]
           }
         },
@@ -95,7 +94,7 @@
             "Type": "Dielectric",
             "Albedo": [
               1.0,
-              1.0,
+              0.5,
               1.0
             ],
             "RefIndex": 1.3
@@ -115,23 +114,6 @@
               0.3,
               0.7
             ]
-          }
-        },
-        {
-          "Center": [
-            10,
-            0.5,
-            -10
-          ],
-          "Radius": 1,
-          "Surface": {
-            "Type": "Metal",
-            "Albedo": [
-              0.3,
-              0.4,
-              0.7
-            ],
-            "Fuzz": 0.0
           }
         }
       ]

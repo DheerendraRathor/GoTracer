@@ -8,6 +8,9 @@ import (
 	"image/color"
 	"image/png"
 	"io/ioutil"
+	"log"
+	"os"
+	"runtime/pprof"
 	"sync"
 
 	"github.com/DheerendraRathor/GoTracer/models"
@@ -17,20 +20,36 @@ import (
 )
 
 var renderSpecFile string
+var doCpuProfile bool
+var showProgress bool
 
 func init() {
-	flag.StringVar(&renderSpecFile, "spec", "sample_world.json", "Name of JSON file containing rendering spec")
+	flag.StringVar(&renderSpecFile, "spec", "./examples/fiveSpheresWithLights.json", "Name of JSON file containing rendering spec")
+	flag.BoolVar(&doCpuProfile, "cpu", false, "Enable CPU Profile")
+	flag.BoolVar(&showProgress, "progress", false, "Show progress by rendering pixel by pixel")
 }
 
 func main() {
 	flag.Parse()
+
+	// Profiler Code
+	if doCpuProfile {
+		f, err := os.Create("cpu.prof")
+		if err != nil {
+			log.Fatal("could not create CPU profile: ", err)
+		}
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("could not start CPU profile: ", err)
+		}
+		defer pprof.StopCPUProfile()
+	}
 
 	file, e := ioutil.ReadFile(renderSpecFile)
 	if e != nil {
 		panic(fmt.Sprintf("File error: %v\n", e))
 	}
 
-	var env models.World
+	var env models.Specification
 	json.Unmarshal(file, &env)
 
 	progress := make(chan *models.Pixel, 100)
@@ -41,40 +60,52 @@ func main() {
 		image.Point{env.Image.Width, env.Image.Height},
 	})
 
-	var pbWg sync.WaitGroup
-	var progressBar *pb.ProgressBar
+	if showProgress {
+		var pbWg sync.WaitGroup
+		var progressBar *pb.ProgressBar
 
-	pbWg.Add(1)
-	go func() {
-		defer pbWg.Done()
-		if env.Settings.ShowProgress {
+		pbWg.Add(1)
+		go func() {
+			defer pbWg.Done()
+
 			total := env.Image.Width * env.Image.Height
 			progressBar = pb.StartNew(total)
 			progressBar.ShowFinalTime = true
 			progressBar.ShowTimeLeft = false
-		}
-		for pixel := range progress {
-			if pixel == nil {
-				break
-			}
+			progressBar.ShowBar = false
 
-			rgbaColor := color.RGBA{pixel.Color[0], pixel.Color[1], pixel.Color[2], 255}
-			pngImage.Set(pixel.I, pixel.J, rgbaColor)
+			for pixel := range progress {
+				if pixel == nil {
+					break
+				}
 
-			if env.Settings.ShowProgress {
+				updateImage(pngImage, pixel)
 				progressBar.Increment()
 			}
-		}
-	}()
+		}()
 
-	closeChan := make(chan bool)
-	goTracer.GoTrace(&env, progress, closeChan)
+		tracer.GoTrace(&env, true, progress, false, nil)
+
+		pbWg.Wait()
+	} else {
+		tracerOutput := tracer.GoTrace(&env, false, progress, false, nil)
+
+		for _, row := range tracerOutput.Pixels {
+			for _, pixel := range row {
+				updateImage(pngImage, pixel)
+			}
+		}
+
+	}
 
 	pngFile := utils.CreateNestedFile(env.Image.OutputFile)
 	defer pngFile.Close()
 
-	pbWg.Wait()
-
 	png.Encode(pngFile, pngImage)
 
+}
+
+func updateImage(image *image.RGBA, pixel *models.Pixel) {
+	rgbaColor := color.RGBA{pixel.Color[0], pixel.Color[1], pixel.Color[2], 255}
+	image.Set(pixel.I, pixel.J, rgbaColor)
 }

@@ -2,36 +2,38 @@ package models
 
 import "math"
 
-func (v Vector) R() float64 {
-	return v[0]
-}
-
-func (v Vector) G() float64 {
-	return v[1]
-}
-
-func (v Vector) B() float64 {
-	return v[2]
-}
-
-func (v Vector) Gamma2() {
-	v[0] = math.Sqrt(v[0])
-	v[1] = math.Sqrt(v[1])
-	v[2] = math.Sqrt(v[2])
+func (v *Vector) Gamma2() {
+	v.data[0] = math.Sqrt(v.data[0])
+	v.data[1] = math.Sqrt(v.data[1])
+	v.data[2] = math.Sqrt(v.data[2])
 }
 
 type Pixel struct {
-	Color []uint8
+	Color [3]uint8
 	I, J  int
 }
 
-func (v Vector) ToUint8(i, j int) *Pixel {
-	result := MultiplyScalar(v, 255.99)
+func (v *Vector) ToPixel(i, j int) *Pixel {
+	r := v.X() * 255.99
+	if r > 255 {
+		r = 255
+	}
+
+	g := v.Y() * 255.99
+	if g > 255 {
+		g = 255
+	}
+
+	b := v.Z() * 255.99
+	if b > 255 {
+		b = 255
+	}
+
 	return &Pixel{
-		[]uint8{
-			uint8(result[0]),
-			uint8(result[1]),
-			uint8(result[2]),
+		[3]uint8{
+			uint8(r),
+			uint8(g),
+			uint8(b),
 		},
 		i,
 		j,

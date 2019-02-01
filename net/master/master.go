@@ -40,7 +40,7 @@ type Agent struct {
 	URL           string
 	Cores         int
 	Conn          *websocket.Conn
-	Env           models.World
+	Env           models.Specification
 	ResultChannel chan<- models.Pixel
 	Completed     chan<- *Agent
 	WorkDone      bool
@@ -120,7 +120,7 @@ func main() {
 	agents := make([]string, 0)
 	json.Unmarshal(agentsFile, &agents)
 
-	var env models.World
+	var env models.Specification
 	json.Unmarshal(specFile, &env)
 
 	pngImage := image.NewRGBA(image.Rectangle{
@@ -190,7 +190,7 @@ func main() {
 	for _, connectedAgent := range connectedAgents {
 		cores := connectedAgent.Cores
 		linesToAgent := linesPerCore * cores
-		agentEnv := models.World(env)
+		agentEnv := models.Specification(env)
 
 		maxWidth = minWidth + linesToAgent + 1
 		if maxWidth > env.Image.Width {

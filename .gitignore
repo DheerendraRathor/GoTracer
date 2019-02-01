@@ -4,3 +4,7 @@
 *.png
 GoTracer
 dist/
+main
+vendor
+*.prof
+profile*.pdf

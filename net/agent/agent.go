@@ -126,7 +126,7 @@ func (c *RenderingClient) ReadHandler() {
 			}
 
 			if !c.IsTracingInProgress {
-				go goTracer.GoTrace(&renderReqMsg.Data, c.Results, closeChan)
+				go tracer.GoTrace(&renderReqMsg.Data, true, c.Results, true, closeChan)
 				c.IsTracingInProgress = true
 				responseMessage.Code = messages.RenderRequestAccepted
 			} else {

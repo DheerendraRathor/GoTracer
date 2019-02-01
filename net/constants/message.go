@@ -19,7 +19,7 @@ type WebSocketMessage struct {
 
 type RenderRequestMessage struct {
 	Type        string
-	Data        models.World
+	Data        models.Specification
 	OperationId string
 }
 

@@ -7,33 +7,47 @@ import (
 )
 
 type Material interface {
-	Scatter(*Ray, *HitRecord) (bool, Vector, *Ray)
+	Scatter(*Ray, *HitRecord, *rand.Rand) (bool, *Vector, *Ray)
+	IsLight() bool
 }
 
 type BaseMaterial struct {
-	Albedo Vector
+	Albedo  *Vector
+	isLight bool
+}
+
+func NewBaseMaterial(albedo *Vector, isLight bool) *BaseMaterial {
+	return &BaseMaterial{
+		Albedo:  albedo,
+		isLight: isLight,
+	}
+}
+
+func (b *BaseMaterial) IsLight() bool {
+	return b.isLight
 }
 
 type Lambertian struct {
 	*BaseMaterial
 }
 
-func NewLambertian(albedo Vector) *Lambertian {
+func NewLambertian(albedo *Vector) *Lambertian {
 	return &Lambertian{
-		&BaseMaterial{
-			Albedo: albedo,
-		},
+		BaseMaterial: NewBaseMaterial(albedo, false),
 	}
 }
 
-func (l *Lambertian) Scatter(ray *Ray, hitRecord *HitRecord) (bool, Vector, *Ray) {
-	pN := AddVectors(hitRecord.P, hitRecord.N)
-	targetPoint := AddVectors(pN, RandomPointInUnitSphere())
+func (l *Lambertian) Scatter(ray *Ray, hitRecord *HitRecord, rng *rand.Rand) (bool, *Vector, *Ray) {
+
+	pN := RandomPointInUnitSphere(rng).
+		AddVector(hitRecord.N)
+
 	scattered := Ray{
 		Origin:    hitRecord.P,
-		Direction: SubtractVectors(targetPoint, hitRecord.P),
+		Direction: pN,
 	}
-	return true, l.Albedo, &scattered
+
+	return true, l.Albedo.Copy(), &scattered
 }
 
 type Metal struct {
@@ -41,23 +55,21 @@ type Metal struct {
 	fuzz float64
 }
 
-func NewMetal(albedo Vector, fuzz float64) *Metal {
+func NewMetal(albedo *Vector, fuzz float64) *Metal {
 	return &Metal{
-		BaseMaterial: &BaseMaterial{
-			albedo,
-		},
-		fuzz: fuzz,
+		BaseMaterial: NewBaseMaterial(albedo, false),
+		fuzz:         fuzz,
 	}
 }
 
-func (m Metal) Scatter(ray *Ray, hitRecord *HitRecord) (bool, Vector, *Ray) {
-	reflected := Reflect(UnitVector(ray.Direction), hitRecord.N)
+func (m *Metal) Scatter(ray *Ray, hitRecord *HitRecord, rng *rand.Rand) (bool, *Vector, *Ray) {
+	reflected := Reflect(ray.Direction, hitRecord.N).MakeUnitVector()
 	scattered := Ray{
 		hitRecord.P,
-		reflected.Add(RandomPointInUnitSphere().MultiplyScalar(m.fuzz)),
+		reflected.AddScaledVector(RandomPointInUnitSphere(rng), m.fuzz),
 	}
-	shouldScatter := VectorDotProduct(scattered.Direction, hitRecord.N) > 0
-	return shouldScatter, m.Albedo, &scattered
+	shouldScatter := scattered.Direction.Dot(hitRecord.N) > 0
+	return shouldScatter, m.Albedo.Copy(), &scattered
 }
 
 type Dielectric struct {
@@ -65,20 +77,20 @@ type Dielectric struct {
 	RefIndex float64
 }
 
-func (d *Dielectric) Scatter(ray *Ray, hitRecord *HitRecord) (bool, Vector, *Ray) {
+func (d *Dielectric) Scatter(ray *Ray, hitRecord *HitRecord, rng *rand.Rand) (bool, *Vector, *Ray) {
 	reflected := Reflect(ray.Direction, hitRecord.N)
-	var outwardNormal Vector
+	var outwardNormal *Vector
 	var ni, nt, cosine, reflectionProb float64
-	if VectorDotProduct(ray.Direction, hitRecord.N) > 0 {
-		outwardNormal = Negate(hitRecord.N)
+	if ray.Direction.Dot(hitRecord.N) > 0 {
+		outwardNormal = hitRecord.N.Copy().Negate()
 		ni = d.RefIndex
 		nt = 1
-		cosine = d.RefIndex * VectorDotProduct(ray.Direction, hitRecord.N) / ray.Direction.Length()
+		cosine = d.RefIndex * ray.Direction.Dot(hitRecord.N) / ray.Direction.Length()
 	} else {
 		outwardNormal = hitRecord.N
 		ni = 1
 		nt = d.RefIndex
-		cosine = -VectorDotProduct(ray.Direction, hitRecord.N) / ray.Direction.Length()
+		cosine = -ray.Direction.Dot(hitRecord.N) / ray.Direction.Length()
 	}
 
 	var scattered *Ray
@@ -89,20 +101,32 @@ func (d *Dielectric) Scatter(ray *Ray, hitRecord *HitRecord) (bool, Vector, *Ray
 		reflectionProb = 1.0
 	}
 
-	if rand.Float64() < reflectionProb {
+	if rng.Float64() < reflectionProb {
 		scattered = &Ray{hitRecord.P, reflected}
 	} else {
 		scattered = &Ray{hitRecord.P, refractedVec}
 	}
 
-	return true, d.Albedo, scattered
+	return true, d.Albedo.Copy(), scattered
 }
 
-func NewDielectric(albedo Vector, r float64) *Dielectric {
+func NewDielectric(albedo *Vector, r float64) *Dielectric {
 	return &Dielectric{
-		BaseMaterial: &BaseMaterial{
-			Albedo: albedo,
-		},
-		RefIndex: r,
+		BaseMaterial: NewBaseMaterial(albedo, false),
+		RefIndex:     r,
 	}
+}
+
+type Light struct {
+	*BaseMaterial
+}
+
+func NewLight(albedo *Vector) *Light {
+	return &Light{
+		BaseMaterial: NewBaseMaterial(albedo, true),
+	}
+}
+
+func (l *Light) Scatter(ray *Ray, hitRecord *HitRecord, rng *rand.Rand) (bool, *Vector, *Ray) {
+	return false, l.Albedo.Copy(), nil
 }
