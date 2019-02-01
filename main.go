@@ -52,15 +52,15 @@ func main() {
 	var env models.Specification
 	json.Unmarshal(file, &env)
 
-	progress := make(chan *models.Pixel, 100)
-	defer close(progress)
-
 	pngImage := image.NewRGBA(image.Rectangle{
 		image.Point{0, 0},
 		image.Point{env.Image.Width, env.Image.Height},
 	})
 
 	if showProgress {
+		progress := make(chan *models.Pixel, 100)
+		defer close(progress)
+
 		var pbWg sync.WaitGroup
 		var progressBar *pb.ProgressBar
 
@@ -87,8 +87,9 @@ func main() {
 		tracer.GoTrace(&env, true, progress, false, nil)
 
 		pbWg.Wait()
+		progressBar.Finish()
 	} else {
-		tracerOutput := tracer.GoTrace(&env, false, progress, false, nil)
+		tracerOutput := tracer.GoTrace(&env, false, nil, false, nil)
 
 		for _, row := range tracerOutput.Pixels {
 			for _, pixel := range row {

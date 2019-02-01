@@ -49,21 +49,19 @@ func (v *Vector) Z() float64 {
 	return v.data[2]
 }
 
-func Reflect(v, n *Vector) *Vector {
-	b2 := n.Copy().Scale(2 * v.Dot(n))
-	return v.Copy().SubtractVector(b2)
+func (v *Vector) Reflect(n *Vector) *Vector {
+	return v.AddScaledVector(n, -2*v.Dot(n))
 }
 
 func Refract(v, n *Vector, ni, nt float64) (bool, *Vector) {
-	uv := v.Copy()
-	uv.MakeUnitVector()
+	uv := v.Copy().MakeUnitVector()
 	cosθ := uv.Dot(n)
 	snellRatio := ni / nt
 	discriminator := 1 - snellRatio*snellRatio*(1-cosθ*cosθ)
 	if discriminator > 0 {
 		//(uv - n*cosθ)*snellRatio - n*sqrt(disc)
-		refracted := uv.SubtractVector(n.Copy().Scale(cosθ)).Scale(snellRatio).
-			SubtractVector(n.Copy().Scale(math.Sqrt(discriminator)))
+		refracted := uv.SubtractScaledVector(n, cosθ).Scale(snellRatio).
+			SubtractScaledVector(n, math.Sqrt(discriminator))
 		return true, refracted
 	}
 	return false, nil
@@ -124,6 +122,10 @@ func (v *Vector) SubtractVector(v1 *Vector) *Vector {
 	v.data[2] -= v1.data[2]
 
 	return v
+}
+
+func (v *Vector) SubtractScaledVector(v1 *Vector, t float64) *Vector {
+	return v.AddScaledVector(v1, -t)
 }
 
 func (v *Vector) MultiplyVector(v1 *Vector) *Vector {

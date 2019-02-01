@@ -63,7 +63,7 @@ func NewMetal(albedo *Vector, fuzz float64) *Metal {
 }
 
 func (m *Metal) Scatter(ray *Ray, hitRecord *HitRecord, rng *rand.Rand) (bool, *Vector, *Ray) {
-	reflected := Reflect(ray.Direction, hitRecord.N).MakeUnitVector()
+	reflected := ray.Direction.Copy().Reflect(hitRecord.N).MakeUnitVector()
 	scattered := Ray{
 		hitRecord.P,
 		reflected.AddScaledVector(RandomPointInUnitSphere(rng), m.fuzz),
@@ -78,7 +78,7 @@ type Dielectric struct {
 }
 
 func (d *Dielectric) Scatter(ray *Ray, hitRecord *HitRecord, rng *rand.Rand) (bool, *Vector, *Ray) {
-	reflected := Reflect(ray.Direction, hitRecord.N)
+	reflected := ray.Direction.Copy().Reflect(hitRecord.N)
 	var outwardNormal *Vector
 	var ni, nt, cosine, reflectionProb float64
 	if ray.Direction.Dot(hitRecord.N) > 0 {

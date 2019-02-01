@@ -40,9 +40,9 @@ func NewCamera(lookFrom, lookAt, vup *Vector, vfov, aspect, aperture, focus floa
 	u := NewEmptyVector().VectorCrossProduct(vup, w).MakeUnitVector()
 	v := NewEmptyVector().VectorCrossProduct(w, u)
 
-	llc := lookFrom.Copy().SubtractVector(u.Copy().Scale(half_width * focus)).
-		SubtractVector(v.Copy().Scale(half_height * focus)).
-		SubtractVector(w.Copy().Scale(focus))
+	llc := lookFrom.Copy().SubtractScaledVector(u, half_width*focus).
+		SubtractScaledVector(v, half_height*focus).
+		SubtractScaledVector(w, focus)
 
 	camera := &Camera{
 		LowerLeftCorner: llc,

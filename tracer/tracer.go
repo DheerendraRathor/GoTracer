@@ -104,7 +104,10 @@ func GoTrace(
 
 	renderWg.Wait()
 
-	progress <- nil
+	if sharePixelProgress {
+		progress <- nil
+	}
+
 	return output
 }
 

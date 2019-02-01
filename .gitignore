@@ -8,3 +8,5 @@ main
 vendor
 *.prof
 profile*.pdf
+.DS_Store
+dolly/dolly
